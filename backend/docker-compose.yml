@@ -1,0 +1,63 @@
+services:
+  webui:
+    # The official image published by hermes-webui. Runs the same FastAPI on :8787.
+    image: ghcr.io/nesquena/hermes-webui:latest
+    container_name: hermes-webui
+    restart: unless-stopped
+    environment:
+      HERMES_WEBUI_HOST: 0.0.0.0
+      HERMES_WEBUI_PORT: "8787"
+      HERMES_WEBUI_PASSWORD: ${WEBUI_PASSWORD:?must be set}
+    volumes:
+      - ${HERMES_HOME:-./hermes-home}:/.hermes
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8787/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    expose:
+      - "8787"
+
+  bridge:
+    build: .
+    container_name: hermes-bridge
+    restart: unless-stopped
+    depends_on:
+      webui:
+        condition: service_healthy
+    environment:
+      WEBUI_BASE_URL: http://webui:8787
+      WEBUI_PASSWORD: ${WEBUI_PASSWORD:?must be set}
+      MOBILE_TOKEN: ${MOBILE_TOKEN:?must be set}
+      RUNS_DB_PATH: /data/runs.sqlite
+      BRIDGE_HOST: 0.0.0.0
+      BRIDGE_PORT: "8080"
+      # APNs (optional v1.1) — leave blank to disable.
+      APNS_TEAM_ID: ${APNS_TEAM_ID:-}
+      APNS_KEY_ID: ${APNS_KEY_ID:-}
+      APNS_KEY_PATH: ${APNS_KEY_PATH:-}
+      APNS_TOPIC: ${APNS_TOPIC:-com.hermes.mobile}
+      APNS_USE_SANDBOX: ${APNS_USE_SANDBOX:-1}
+    volumes:
+      - bridge-data:/data
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/__bridge/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+
+  # Optional: uncomment to expose the bridge publicly with a stable HTTPS hostname.
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   restart: unless-stopped
+  #   command: tunnel --no-autoupdate run
+  #   environment:
+  #     TUNNEL_TOKEN: ${TUNNEL_TOKEN:?required}
+  #   depends_on:
+  #     bridge:
+  #       condition: service_healthy
+
+volumes:
+  bridge-data:

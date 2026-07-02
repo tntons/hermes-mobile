@@ -1,0 +1,157 @@
+/*
+ * hermes-mobile.css
+ * Polished mobile CSS for the Hermes renderer.
+ * Ported/adapted from hermes-webui/static/ (commit SHA recorded in UPSTREAM.txt).
+ *
+ * Required rules:
+ *   - safe-area insets handled by the renderer (edge-to-edge)
+ *   - 16pt text inputs (kills iOS zoom-on-focus)
+ *   - 44pt+ tap targets
+ *   - --keyboard-inset supported for any inline input surfaces
+ *   - inline-asset url() refs resolved by Swift side (no relative-folder
+ *     references in CSS, so this file is fully self-contained except for the
+ *     imports in renderer.html).
+ */
+
+:root {
+  --keyboard-inset: 0px;
+
+  /* GitHub-dark inspired palette */
+  --bg:           #0d1117;
+  --surface:      #161b22;
+  --border:       #30363d;
+  --fg:           #e6edf3;
+  --fg-muted:     #8b949e;
+  --link:         #58a6ff;
+  --code-bg:      #161b22;
+  --quote-fg:     #8b949e;
+  --quote-border: #3b434b;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--fg);
+  font-family: -apple-system, system-ui, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  /* Edge-to-edge — let Swift own top/bottom safe-area; we pad bottom with
+     --keyboard-inset so any inline <input> rides up with the keyboard. */
+  padding-bottom: var(--keyboard-inset);
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+a:active { opacity: 0.6; }
+
+input, textarea, select, button {
+  font-size: 16px;          /* KILLS iOS zoom-on-focus */
+  color: var(--fg);
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  min-height: 44px;        /* 44pt tap target */
+}
+button { cursor: pointer; }
+
+/* markdown-body classes */
+
+.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 {
+  margin: 1.2em 0 0.5em;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.markdown-body h1 { font-size: 1.6em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+.markdown-body h2 { font-size: 1.35em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+.markdown-body h3 { font-size: 1.15em; }
+.markdown-body h4 { font-size: 1.0em; }
+
+.markdown-body p { margin: 0.6em 0; }
+
+.markdown-body ul, .markdown-body ol { padding-left: 1.4em; }
+.markdown-body li + li { margin-top: 0.25em; }
+
+.markdown-body blockquote {
+  margin: 0.6em 0;
+  padding: 0.3em 0.9em;
+  border-left: 3px solid var(--quote-border);
+  color: var(--quote-fg);
+}
+
+.markdown-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  background: var(--code-bg);
+  padding: 0.15em 0.4em;
+  border-radius: 5px;
+  font-size: 0.9em;
+}
+.markdown-body pre {
+  background: var(--code-bg);
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 0.85em;
+  line-height: 1.45;
+  border: 1px solid var(--border);
+  margin: 0.8em 0;
+}
+.markdown-body pre code { background: transparent; padding: 0; font-size: 1em; }
+
+.markdown-body table {
+  border-collapse: collapse;
+  margin: 0.8em 0;
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.markdown-body th, .markdown-body td {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  text-align: left;
+}
+.markdown-body th { background: rgba(255,255,255,0.04); }
+
+.markdown-body img, .markdown-body svg, .mermaid-svg svg {
+  max-width: 100%;
+  height: auto;
+}
+.mermaid-svg {
+  margin: 0.8em 0;
+  text-align: center;
+}
+.mermaid-error {
+  background: rgba(248, 81, 73, 0.10);
+  border: 1px solid rgba(248, 81, 73, 0.40);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: #ff7b72;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:           #ffffff;
+    --surface:      #f6f8fa;
+    --border:       #d0d7de;
+    --fg:           #1f2328;
+    --fg-muted:     #59636e;
+    --link:         #0969da;
+    --code-bg:      #f6f8fa;
+    --quote-fg:     #59636e;
+    --quote-border: #d0d7de;
+  }
+}

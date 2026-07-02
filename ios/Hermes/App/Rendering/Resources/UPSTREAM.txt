@@ -1,0 +1,29 @@
+UPSTREAM.txt
+============
+
+This directory vendors / loads third-party renderer assets.
+
+Renderer base CSS theme (`renderer.html` → github-dark.css):
+  Source:    https://github.com/nicwaller/cdnjs (jsDelivr mirror)
+  File:      prismjs@1/themes/github-dark.css
+  Upstream:  https://github.com/PrismJS/prism/tree/master/themes
+  Pinned:    1.29.0
+
+JavaScript deps (`renderer.html` → marked / Prism / mermaid):
+  marked:     cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js
+  prism:      cdn.jsdelivr.net/npm/prismjs@1.29.0/...
+  mermaid:    cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js
+
+To pin the Hermes-webui assets you adapt from in `hermes-mobile.css`,
+record the commit SHA here whenever you vendor new source. Example:
+
+  hermes-webui commit: <git rev-parse HEAD of the cloned nesquena/hermes-webui at vendor time>
+  vendored on:          <iso-date>
+  vendored by:          <human>
+
+The iOS app loads the JS via CDN (see `renderer.html`). To switch to fully
+offline, copy `marked.min.js`, `prism-*.min.js`, `mermaid.min.js` from
+jsDelivr into this directory, update the <script src="..."> tags to be
+relative, and ensure Xcode copies them into the Hermes target as bundle
+resources (Project Editor → Hermes target → "Copy Bundle Resources" build
+phase).
