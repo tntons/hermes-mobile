@@ -14,24 +14,22 @@ struct HermesApp: App {
 
     init() {
         HermesBackgroundTasks.register()
-        // Debug helpers (no-op in production:
-        //   -autoConfigureToken <hex>   pre-fill the keychain so SessionListView
-        //                                appears without manual FirstRunView entry
-        //   -openFirstSession           auto-navigate to the first session in the
-        //                                SessionListView for headless verification
+        #if DEBUG
+        // Debug helpers for headless verification of the FirstRunView →
+        // SessionListView → ConversationView flow without manual typing.
+        // Run via:
+        //   xcrun simctl launch booted com.hermes.mobile \
+        //     -autoConfigureToken <hex> [-openFirstSession]
         let args = ProcessInfo.processInfo.arguments
         if let idx = args.firstIndex(of: "-autoConfigureToken"),
            idx + 1 < args.count {
-            let token = args[idx + 1]
-            NSLog("[Hermes][Boot] -autoConfigureToken detected, prefilling keychain")
             KeychainStore.shared.gatewayURL = URL(string: "http://localhost:8080")
-            KeychainStore.shared.bearerToken = token
-            NSLog("[Hermes][Boot] isConfigured=%d", KeychainStore.shared.isConfigured ? 1 : 0)
+            KeychainStore.shared.bearerToken = args[idx + 1]
         }
         if args.contains("-openFirstSession") {
-            NSLog("[Hermes][Boot] -openFirstSession detected")
             UserDefaults.standard.set(true, forKey: "_debug.openFirstSession")
         }
+        #endif
     }
 
     var body: some Scene {
