@@ -47,7 +47,7 @@ public enum SSEEvent: Sendable {
         public let is_error: Bool?
     }
 
-    public struct ApprovalEvent: Sendable {
+    public struct ApprovalEvent: Hashable, Sendable {
         public let command: String
         public let description: String
         public let pattern_key: String?
@@ -118,7 +118,7 @@ public enum SSEEvent: Sendable {
     }
 }
 
-public enum TerminalState: Equatable, Sendable {
+public enum TerminalState: Hashable, Sendable {
     case success, cancelled, error(String)
 
     public var isSuccess: Bool { if case .success = self { return true } else { return false } }

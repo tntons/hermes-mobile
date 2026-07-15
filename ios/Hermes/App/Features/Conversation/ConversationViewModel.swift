@@ -13,7 +13,7 @@ import Observation
 public final class ConversationViewModel {
     public private(set) var sessionID: String
     public var title: String
-    public private(set) var messages: [ChatMessage] = []
+    public var messages: [ChatMessage] = []
     public var composerText: String = ""
     public var isStreaming: Bool = false
     public var errorMessage: String?
@@ -68,7 +68,7 @@ public final class ConversationViewModel {
             // Replace messages where their content differs from cache, preserving
             // any currently-streaming assistant placeholder at the tail.
             var loaded: [ChatMessage] = detail.messages.map { m in
-                let mut = ChatMessage(
+                var mut = ChatMessage(
                     role: m.role,
                     text: m.textRepresentation,
                     reasoning: m.reasoning ?? "",
@@ -165,7 +165,7 @@ public final class ConversationViewModel {
         streamTask?.cancel()
         guard let client = client else { return }
 
-        let stream = client.stream(streamID: streamID, lastEventID: lastEventID)
+        let stream = await client.stream(streamID: streamID, lastEventID: lastEventID)
         streamTask = Task { [weak self] in
             guard let self else { return }
             do {
@@ -189,7 +189,7 @@ public final class ConversationViewModel {
     private func handle(_ event: SSEEvent, envelope: SSEEventEnvelope, assistantID: UUID) {
         lastEventID = envelope.lastEventID
         if let sid = currentStreamID, let eid = envelope.lastEventID {
-            HermesDAO.recordCursor(streamID: sid, lastEventID: eid)
+            HermesDAO.recordCursor(streamID: sid, sessionID: sessionID, lastEventID: eid)
         }
         guard let idx = messages.firstIndex(where: { $0.id == assistantID }) else { return }
 

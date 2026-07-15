@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import LDEventSource
+import LDSwiftEventSource
 import Observation
 
 public actor HermesClient {
@@ -56,7 +56,7 @@ public actor HermesClient {
 
     public func getJSON<R: Decodable>(_ api: HermesAPI) async throws -> R {
         let req = makeRequest(api)
-        HermesLog.network.debug("GET \(api.url(base: config.gatewayURL).absoluteString, privacy: .public)")
+        HermesLog.network.debug("GET \(api.url(base: self.config.gatewayURL).absoluteString, privacy: .public)")
         do {
             let (data, response) = try await session.data(for: req)
             try check(response: response, data: data)
@@ -74,7 +74,7 @@ public actor HermesClient {
 
     public func postJSON<R: Decodable>(_ api: HermesAPI, body: Encodable) async throws -> R {
         let req = makeRequest(api, body: body)
-        HermesLog.network.debug("POST \(api.url(base: config.gatewayURL).absoluteString, privacy: .public)")
+        HermesLog.network.debug("POST \(api.url(base: self.config.gatewayURL).absoluteString, privacy: .public)")
         do {
             let (data, response) = try await session.data(for: req)
             try check(response: response, data: data)
@@ -92,7 +92,7 @@ public actor HermesClient {
 
     public func postJSONDiscard(_ api: HermesAPI, body: Encodable) async throws {
         let req = makeRequest(api, body: body)
-        HermesLog.network.debug("POST \(api.url(base: config.gatewayURL).absoluteString, privacy: .public)")
+        HermesLog.network.debug("POST \(api.url(base: self.config.gatewayURL).absoluteString, privacy: .public)")
         do {
             let (_, response) = try await session.data(for: req)
             try check(response: response, data: Data())
@@ -167,7 +167,9 @@ public actor HermesClient {
     }
 
     public func cancelStream(_ streamID: String) async throws {
-        _ = try? await getJSON(.chatCancel(streamID: streamID))
+        let req = makeRequest(.chatCancel(streamID: streamID))
+        let (_, response) = try await session.data(for: req)
+        try check(response: response, data: Data())
     }
 
     // MARK: - SSE
@@ -190,35 +192,36 @@ public actor HermesClient {
 
             HermesLog.sse.info("connecting stream id=\(streamID, privacy: .public) afterEventID=\(lastEventID ?? "nil", privacy: .public)")
 
-            let delegate = StreamDelegate(
+            let handler = StreamHandler(
                 continuation: continuation,
                 bearerToken: config.bearerToken,
                 gatewayURL: config.gatewayURL,
                 maxReconnects: maxReconnects
             )
-            delegate.eventSource = LDEventSource.EventSource(
-                request: req,
-                configuration: LDEventSource.Configuration(
-                    reconnectTime: 1.0,
-                    reconnectTimeMax: 30.0,
-                    reconnectRandomnessFactor: 0.3,
-                    allowedTLSProtocols: [.TLSv12],
-                    httpHeaders: ["Authorization": "Bearer \(config.bearerToken)"]
-                ),
-                delegate: delegate
-            )
+            var cfg = EventSource.Config(handler: handler, url: url)
+            cfg.headers = [
+                "Authorization": "Bearer \(config.bearerToken)",
+                "Accept": "text/event-stream"
+            ]
+            cfg.lastEventId = lastEventID ?? ""
+            cfg.reconnectTime = 1.0
+            cfg.maxReconnectTime = 30.0
+            let eventSource = EventSource(config: cfg)
+            handler.eventSource = eventSource
             continuation.onTermination = { @Sendable _ in
-                Task { await delegate.cancel() }
+                Task { await handler.cancel() }
             }
-            delegate.eventSource.start()
+            eventSource.start()
         }
     }
 }
 
-// MARK: - StreamDelegate
+// MARK: - StreamHandler
 
-/// Wraps the EventSource delegate with reconnect aware of `after_event_id`.
-private final class StreamDelegate: NSObject, LDEventSource.EventSourceDelegate, @unchecked Sendable {
+/// Wraps the EventSource EventHandler with reconnect bookkeeping
+/// (lastEventID cursor + reconnect budget). The library auto-injects
+/// `Last-Event-Id` on every reconnect from parsed event IDs.
+private final class StreamHandler: EventHandler, @unchecked Sendable {
     let continuation: AsyncThrowingStream<SSEEventEnvelope, Error>.Continuation
     let bearerToken: String
     let gatewayURL: URL
@@ -228,7 +231,7 @@ private final class StreamDelegate: NSObject, LDEventSource.EventSourceDelegate,
     private var lastEventID: String?
     private var finished = false
     private let lock = NSLock()
-    var eventSource: LDEventSource.EventSource!
+    var eventSource: EventSource!
 
     init(
         continuation: AsyncThrowingStream<SSEEventEnvelope, Error>.Continuation,
@@ -240,62 +243,61 @@ private final class StreamDelegate: NSObject, LDEventSource.EventSourceDelegate,
         self.bearerToken = bearerToken
         self.gatewayURL = gatewayURL
         self.maxReconnects = maxReconnects
-        super.init()
     }
 
-    func eventSourceOpened(_ eventSource: LDEventSource.EventSource) {
+    func onOpened() {
         HermesLog.sse.debug("opened")
     }
 
-    func eventSource(_ eventSource: LDEventSource.EventSource, didReceiveMessage event: LDEventSource.MessageEvent) {
-        // Each event arrives here with parsed name/data/id/retry
-        if let id = event.id, !id.isEmpty {
-            lock.lock(); lastEventID = id; lock.unlock()
-        }
-        let parsed = SSEParser.parse(eventName: event.event, data: event.data ?? "", id: event.id)
-        guard let evt = parsed else { return }
-        continuation.yield(SSEEventEnvelope(event: evt, lastEventID: lastEventID))
-        if case .streamEnd = evt { finish() }
+    func onClosed() {
+        HermesLog.sse.debug("closed")
     }
 
-    func eventSource(_ eventSource: LDEventSource.EventSource, didReceiveError error: Error) {
+    func onMessage(eventType: String, messageEvent: MessageEvent) {
+        if !messageEvent.lastEventId.isEmpty {
+            lock.lock(); lastEventID = messageEvent.lastEventId; lock.unlock()
+        }
+        let parsed = SSEParser.parse(
+            eventName: eventType,
+            data: messageEvent.data,
+            id: messageEvent.lastEventId
+        )
+        guard let evt = parsed else { return }
+        continuation.yield(SSEEventEnvelope(event: evt, lastEventID: lastEventID))
+        if case .streamEnd = evt { finish(throwing: nil) }
+    }
+
+    func onComment(comment: String) {
+        // 5s heartbeats — ignored.
+    }
+
+    func onError(error: Error) {
         HermesLog.sse.warning("error: \(error.localizedDescription, privacy: .public)")
         if finished { return }
         // Don't immediately fail — LDSwiftEventSource auto-reconnects by default.
         // Only terminate if we've burned through our reconnect budget.
         reconnectCount += 1
         if reconnectCount > maxReconnects {
-            continuation.finish(throwing: APIError.transport(error.localizedDescription))
+            finish(throwing: APIError.transport(error.localizedDescription))
+            eventSource?.stop()
         }
-    }
-
-    func eventSourceClosed(_ eventSource: LDEventSource.EventSource) {
-        HermesLog.sse.debug("closed")
-    }
-
-    func eventSource(_ eventSource: LDEventSource.EventSource, didReceiveComment comment: String) {
-        // 5s heartbeats — ignored.
-    }
-
-    func eventSource(_ eventSource: LDEventSource.EventSource, willRetryWithDelay delay: TimeInterval) {
-        // The library is about to retry — reapply after_event_id from the latest event id.
-        HermesLog.sse.info("will retry in \(delay, privacy: .public)s with afterEventID=\(lastEventID ?? "nil", privacy: .public)")
-        // LDEventSource constructs its own retry URL — we cannot easily mutate
-        // the base URL, so we rely on the server-side journal accept the
-        // Last-Event-ID header (which LDEventSource sends automatically).
     }
 
     @MainActor
     func cancel() {
-        finish()
-        eventSource?.close()
+        finish(throwing: nil)
+        eventSource?.stop()
     }
 
-    private func finish() {
+    private func finish(throwing error: Error?) {
         lock.lock(); defer { lock.unlock() }
         guard !finished else { return }
         finished = true
-        continuation.finish()
+        if let error = error {
+            continuation.finish(throwing: error)
+        } else {
+            continuation.finish()
+        }
     }
 }
 

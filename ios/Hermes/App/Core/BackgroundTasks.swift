@@ -52,6 +52,5 @@ public enum HermesBackgroundTasks {
             }
         }
 
-        task.expirationHandler = { _ in worker.cancel() }
-    }
+        }
 }

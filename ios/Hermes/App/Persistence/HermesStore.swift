@@ -153,7 +153,7 @@ public enum HermesStore {
                 )
                 return try ModelContainer(for: schema, configurations: [config])
             } catch {
-                return try ModelContainer(
+                return try! ModelContainer(
                     for: schema,
                     configurations: ModelConfiguration("Hermes", isStoredInMemoryOnly: true)
                 )

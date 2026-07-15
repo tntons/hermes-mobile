@@ -229,6 +229,22 @@ public struct ToolCall: Codable, Hashable, Sendable {
     public let duration: Double?
     public let is_error: Bool?
 
+    public init(
+        name: String,
+        args: AnyCodable? = nil,
+        result: AnyCodable? = nil,
+        preview: String? = nil,
+        duration: Double? = nil,
+        is_error: Bool? = nil
+    ) {
+        self.name = name
+        self.args = args
+        self.result = result
+        self.preview = preview
+        self.duration = duration
+        self.is_error = is_error
+    }
+
     public var id: String { "\(name)-\((preview ?? "").hashValue)" }
 }
 
@@ -293,4 +309,22 @@ public struct ChatStartRequest: Codable, Sendable {
     public let model: String?
     public let model_provider: String?
     public let profile: String?
+
+    public init(
+        session_id: String,
+        message: String,
+        attachments: [Attachment]? = nil,
+        workspace: String? = nil,
+        model: String? = nil,
+        model_provider: String? = nil,
+        profile: String? = nil
+    ) {
+        self.session_id = session_id
+        self.message = message
+        self.attachments = attachments
+        self.workspace = workspace
+        self.model = model
+        self.model_provider = model_provider
+        self.profile = profile
+    }
 }

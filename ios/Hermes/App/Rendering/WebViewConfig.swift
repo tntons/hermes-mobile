@@ -15,8 +15,8 @@ import WebKit
 /// "Previous / Next / Done" toolbar above the on-screen keyboard that pollutes
 /// the chat experience). Returning `nil` from `inputAccessoryView` is the
 /// documented and supported path.
-final class HermesWebView: WKWebView {
-    override var inputAccessoryView: UIView? { nil }
+public final class HermesWebView: WKWebView {
+    public override var inputAccessoryView: UIView? { nil }
 }
 
 public enum WebViewConfig {

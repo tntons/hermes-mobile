@@ -60,7 +60,7 @@ public struct MarkdownWebView: UIViewRepresentable {
             // First load: ask JS to render the current text (likely empty initially).
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
-                if let text = self.pendingText ?? "", text != self.lastRendered {
+                if let text = self.pendingText, !text.isEmpty, text != self.lastRendered {
                     self.commit(text)
                 }
             }
