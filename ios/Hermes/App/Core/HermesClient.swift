@@ -137,7 +137,16 @@ public actor HermesClient {
     }
 
     public func fetchSessionDetail(id: String) async throws -> SessionDetailResponse {
-        try await getJSON(.session(id: id, messages: true))
+        let api: HermesAPI = .session(id: id, messages: true)
+        NSLog("[Hermes][Client] fetchSessionDetail url=%@", api.url(base: config.gatewayURL).absoluteString)
+        do {
+            let resp: SessionDetailResponse = try await getJSON(api)
+            NSLog("[Hermes][Client] fetchSessionDetail OK: messages=%d session.title=%@", resp.messages.count, resp.session.title)
+            return resp
+        } catch {
+            NSLog("[Hermes][Client] fetchSessionDetail FAILED: %@", "\(error)")
+            throw error
+        }
     }
 
     public func newSession(_ req: NewSessionRequest) async throws -> Session {

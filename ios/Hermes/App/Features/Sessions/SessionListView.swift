@@ -118,6 +118,12 @@ struct SessionListView: View {
             }
             .task {
                 await viewModel.bootstrap(config: apiConfig)
+                if ProcessInfo.processInfo.arguments.contains("-openFirstSession"),
+                   let first = viewModel.sessions.first,
+                   presentingConversationFor == nil {
+                    NSLog("[Hermes][UI] -openFirstSession: navigating to %@", first.session_id)
+                    presentingConversationFor = first
+                }
             }
         }
     }

@@ -33,11 +33,19 @@ public struct Session: Codable, Identifiable, Hashable, Sendable {
     public var has_pending_user_message: Bool?
     public var active_stream_id: String?
 
+    // Detail-only fields: present in `/api/session?...&messages=1`,
+    // absent in `/api/sessions`. Decoded defensively (nil if missing).
+    public var messages: [Message]?
+    public var tool_calls: [ToolCallRef]?
+    public var end_reason: String?
+    public var actual_message_count: Int?
+
     private enum CodingKeys: String, CodingKey {
         case session_id, title, workspace, model, model_provider, message_count
         case created_at, updated_at, last_message_at, pinned, archived, project_id, profile
         case input_tokens, output_tokens, estimated_cost
         case is_streaming, has_pending_user_message, active_stream_id
+        case messages, tool_calls, end_reason, actual_message_count
     }
 
     public init(from decoder: Decoder) throws {
@@ -62,6 +70,11 @@ public struct Session: Codable, Identifiable, Hashable, Sendable {
         self.is_streaming = try? c.decodeIfPresent(Bool.self, forKey: .is_streaming)
         self.has_pending_user_message = try? c.decodeIfPresent(Bool.self, forKey: .has_pending_user_message)
         self.active_stream_id = try? c.decodeIfPresent(String.self, forKey: .active_stream_id)
+        // Detail-only fields (nil in /api/sessions list response):
+        self.messages = try? c.decodeIfPresent([Message].self, forKey: .messages)
+        self.tool_calls = try? c.decodeIfPresent([ToolCallRef].self, forKey: .tool_calls)
+        self.end_reason = try? c.decodeIfPresent(String.self, forKey: .end_reason)
+        self.actual_message_count = try? c.decodeIfPresent(Int.self, forKey: .actual_message_count)
     }
 
     public init(
@@ -83,7 +96,11 @@ public struct Session: Codable, Identifiable, Hashable, Sendable {
         estimated_cost: Double? = nil,
         is_streaming: Bool? = nil,
         has_pending_user_message: Bool? = nil,
-        active_stream_id: String? = nil
+        active_stream_id: String? = nil,
+        messages: [Message]? = nil,
+        tool_calls: [ToolCallRef]? = nil,
+        end_reason: String? = nil,
+        actual_message_count: Int? = nil
     ) {
         self.session_id = session_id
         self.title = title
@@ -104,6 +121,10 @@ public struct Session: Codable, Identifiable, Hashable, Sendable {
         self.is_streaming = is_streaming
         self.has_pending_user_message = has_pending_user_message
         self.active_stream_id = active_stream_id
+        self.messages = messages
+        self.tool_calls = tool_calls
+        self.end_reason = end_reason
+        self.actual_message_count = actual_message_count
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -127,6 +148,10 @@ public struct Session: Codable, Identifiable, Hashable, Sendable {
         try c.encodeIfPresent(is_streaming, forKey: .is_streaming)
         try c.encodeIfPresent(has_pending_user_message, forKey: .has_pending_user_message)
         try c.encodeIfPresent(active_stream_id, forKey: .active_stream_id)
+        try c.encodeIfPresent(messages, forKey: .messages)
+        try c.encodeIfPresent(tool_calls, forKey: .tool_calls)
+        try c.encodeIfPresent(end_reason, forKey: .end_reason)
+        try c.encodeIfPresent(actual_message_count, forKey: .actual_message_count)
     }
 
     public var displayTimestamp: Date {
@@ -143,11 +168,14 @@ public struct SessionListResponse: Codable, Sendable {
 }
 
 public struct SessionDetailResponse: Codable, Sendable {
+    // hermes-webui nests `messages`, `tool_calls`, etc. INSIDE `session`,
+    // not at the top level as the IMPLEMENTATION_PLAN §3.2 originally
+    // documented. Expose them as computed accessors so callers can keep
+    // using `detail.messages` / `detail.tool_calls` unchanged.
     public let session: Session
-    public let messages: [Message]
-    public let tool_calls: [ToolCallRef]?
-    public let todo_state: TodoState?
-    public let _messages_truncated: Bool?
+
+    public var messages: [Message] { session.messages ?? [] }
+    public var tool_calls: [ToolCallRef]? { session.tool_calls }
 }
 
 public struct TodoState: Codable, Hashable, Sendable {
@@ -170,6 +198,73 @@ public struct Message: Codable, Hashable, Sendable {
     public let tool_call_id: String?
     public let _partial: Bool?
     public let _error: Bool?
+    // webui extras — surfaced for SSE handler / tool display:
+    public let tool_name: String?
+    public let name: String?
+    public let reasoning_content: String?
+    public let reasoning_details: AnyCodable?
+
+    private enum CodingKeys: String, CodingKey {
+        case role, content, timestamp, reasoning, attachments
+        case tool_calls, tool_call_id, _partial, _error
+        case tool_name, name, reasoning_content, reasoning_details
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        // All fields defensive — a single bad message must not poison the
+        // whole `[Message]` array. This mirrors Session's decoder pattern
+        // and matches the actual webui contract: tool_calls use a nested
+        // shape (`function.name` + `function.arguments`) different from
+        // our local `ToolCall`, so we capture what we can and drop the rest.
+        self.role = (try? c.decode(Role.self, forKey: .role)) ?? .user
+        let decodedContent: MessageContent = (try? c.decodeIfPresent(MessageContent.self, forKey: .content)) ?? .text("")
+        self.content = decodedContent
+        self.timestamp = (try? c.decode(Double.self, forKey: .timestamp)) ?? 0
+        self.reasoning = try? c.decodeIfPresent(String.self, forKey: .reasoning)
+        self.attachments = try? c.decodeIfPresent([Attachment].self, forKey: .attachments)
+        // webui's tool_calls shape: {id, type, function: {name, arguments}} — not compatible
+        // with our local ToolCall. Capture raw JSON so ConversationViewModel
+        // can still display a name + preview, then drop the typed field.
+        self.tool_calls = try? c.decodeIfPresent([ToolCall].self, forKey: .tool_calls)
+        self.tool_call_id = try? c.decodeIfPresent(String.self, forKey: .tool_call_id)
+        self._partial = try? c.decodeIfPresent(Bool.self, forKey: ._partial)
+        self._error = try? c.decodeIfPresent(Bool.self, forKey: ._error)
+        self.tool_name = try? c.decodeIfPresent(String.self, forKey: .tool_name)
+        self.name = try? c.decodeIfPresent(String.self, forKey: .name)
+        self.reasoning_content = try? c.decodeIfPresent(String.self, forKey: .reasoning_content)
+        self.reasoning_details = try? c.decodeIfPresent(AnyCodable.self, forKey: .reasoning_details)
+    }
+
+    public init(
+        role: Role,
+        content: MessageContent,
+        timestamp: Double,
+        reasoning: String? = nil,
+        attachments: [Attachment]? = nil,
+        tool_calls: [ToolCall]? = nil,
+        tool_call_id: String? = nil,
+        _partial: Bool? = nil,
+        _error: Bool? = nil,
+        tool_name: String? = nil,
+        name: String? = nil,
+        reasoning_content: String? = nil,
+        reasoning_details: AnyCodable? = nil
+    ) {
+        self.role = role
+        self.content = content
+        self.timestamp = timestamp
+        self.reasoning = reasoning
+        self.attachments = attachments
+        self.tool_calls = tool_calls
+        self.tool_call_id = tool_call_id
+        self._partial = _partial
+        self._error = _error
+        self.tool_name = tool_name
+        self.name = name
+        self.reasoning_content = reasoning_content
+        self.reasoning_details = reasoning_details
+    }
 
     public var isFinal: Bool { _partial != true && _error != true }
 
