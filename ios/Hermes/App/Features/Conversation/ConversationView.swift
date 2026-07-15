@@ -48,7 +48,7 @@ struct ConversationView: View {
                 .padding(.top, 8)
             }
         }
-        .navigationTitle($viewModel.titleDraft)
+        .navigationTitle(viewModel.titleDraft)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
