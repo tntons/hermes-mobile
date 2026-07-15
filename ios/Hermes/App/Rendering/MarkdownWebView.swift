@@ -3,8 +3,10 @@
 //  Hermes
 //
 //  WKWebView wrapper that renders a markdown string into our `renderer.html`.
-//  Re-renders streamed text with debouncing; reports intrinsic height so the
-//  surrounding SwiftUI cell can size itself.
+//  Re-renders streamed text with debouncing. Reports intrinsic height to the
+//  parent SwiftUI view via a closure passed in at construction, so each
+//  cell observes only its own webview's reports (no NotificationCenter
+//  cross-talk between cells).
 //
 
 import SwiftUI
@@ -13,13 +15,24 @@ import WebKit
 public struct MarkdownWebView: UIViewRepresentable {
     let text: String
     let isStreaming: Bool
+    let onHeightChange: (CGFloat) -> Void
+    let onLinkTap: (String) -> Void
 
-    public init(text: String, isStreaming: Bool = false) {
+    public init(
+        text: String,
+        isStreaming: Bool = false,
+        onHeightChange: @escaping (CGFloat) -> Void = { _ in },
+        onLinkTap: @escaping (String) -> Void = { _ in }
+    ) {
         self.text = text
         self.isStreaming = isStreaming
+        self.onHeightChange = onHeightChange
+        self.onLinkTap = onLinkTap
     }
 
-    public func makeCoordinator() -> Coordinator { Coordinator() }
+    public func makeCoordinator() -> Coordinator {
+        Coordinator(onHeightChange: onHeightChange, onLinkTap: onLinkTap)
+    }
 
     public func makeUIView(context: Context) -> HermesWebView {
         let web = WebViewConfig.make(frame: .zero)
@@ -55,6 +68,13 @@ public struct MarkdownWebView: UIViewRepresentable {
         private var pendingText: String?
         private var pendingFlush: DispatchWorkItem?
         private var lastRendered: String = ""
+        private let onHeightChange: (CGFloat) -> Void
+        private let onLinkTap: (String) -> Void
+
+        init(onHeightChange: @escaping (CGFloat) -> Void, onLinkTap: @escaping (String) -> Void) {
+            self.onHeightChange = onHeightChange
+            self.onLinkTap = onLinkTap
+        }
 
         public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             // First load: ask JS to render the current text (likely empty initially).
@@ -98,22 +118,22 @@ public struct MarkdownWebView: UIViewRepresentable {
             web.evaluateJavaScript(js, completionHandler: nil)
         }
 
-        // WKScriptMessageHandler
+        // WKScriptMessageHandler — scopes each report to *this* webview by
+        // calling the per-instance closure rather than a global
+        // NotificationCenter post. Eliminates cross-cell height bleed.
 
         public func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
-            if message.name == "heightChange", let h = message.body as? Double {
-                // Re-emit via Notification so the SwiftUI cell picks it up.
-                NotificationCenter.default.post(
-                    name: .hermesRendererHeight,
-                    object: web,
-                    userInfo: ["height": h]
-                )
-            } else if message.name == "linkTap", let href = message.body as? String {
-                NotificationCenter.default.post(
-                    name: .hermesRendererLinkTap,
-                    object: web,
-                    userInfo: ["href": href]
-                )
+            switch message.name {
+            case "heightChange":
+                if let h = message.body as? Double {
+                    onHeightChange(max(60, CGFloat(h) + 4))
+                }
+            case "linkTap":
+                if let href = message.body as? String {
+                    onLinkTap(href)
+                }
+            default:
+                break
             }
         }
 
@@ -135,14 +155,17 @@ public struct MarkdownWebView: UIViewRepresentable {
                     .replacingOccurrences(of: "\\", with: "\\\\")
                     .replacingOccurrences(of: "\n", with: "\\n")
                     .replacingOccurrences(of: "\r", with: "\\r")
-                    .replacingOccurrences(of: "\"", with: "\\\"")
+                    .replacingOccurrences(of: "\"", with: "\\\\\"")
                 return "\"\(escaped)\""
             }
         }
     }
 }
 
+// Notification kept for any external listener that wants link taps without
+// wiring the per-cell closure (e.g. analytics). Coordinator now defaults to
+// posting here as well so existing hookups keep working, but the primary
+// path is the closure.
 public extension Notification.Name {
-    static let hermesRendererHeight = Notification.Name("HermesRendererHeight")
     static let hermesRendererLinkTap = Notification.Name("HermesRendererLinkTap")
 }

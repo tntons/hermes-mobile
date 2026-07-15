@@ -18,22 +18,19 @@ struct MessageListView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical) {
-                LazyVStack(spacing: 12) {
-                    ForEach(messages) { m in
-                        MessageCell(message: m, isStreaming: isStreaming)
-                            .id(m.id)
-                    }
-                    if isStreaming {
-                        HStack {
-                            Spacer()
-                            ProgressView()
-                                .controlSize(.small)
-                                .padding(.trailing)
-                        }
+                LazyVStack(spacing: 14) {
+                    ForEach(Array(messages.enumerated()), id: \.element.id) { idx, m in
+                        MessageCell(
+                            message: m,
+                            isStreaming: isStreaming && idx == messages.count - 1,
+                            isLastInTurn: isLastTurnBoundary(at: idx)
+                        )
+                        .id(m.id)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, 14)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
             }
             .onChange(of: messages.count) { _, _ in
                 if let last = messages.last {
@@ -50,5 +47,16 @@ struct MessageListView: View {
                 }
             }
         }
+    }
+
+    /// The terminal "Complete" / "Cancelled" badge should only render on the
+    /// last assistant message in the run, not on every finished message.
+    private func isLastTurnBoundary(at index: Int) -> Bool {
+        guard messages[index].role == .assistant else { return false }
+        let nextIndex = index + 1
+        if nextIndex >= messages.count { return true }
+        // If the next message is a user message OR not finalized, this is a turn boundary.
+        let next = messages[nextIndex]
+        return next.role == .user
     }
 }
