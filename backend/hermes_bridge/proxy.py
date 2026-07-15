@@ -58,7 +58,15 @@ async def _passthrough(
     out_ct = resp.headers.get("content-type", "application/json")
 
     # Drop cookie/hop-by-hop headers we don't want to expose to the phone.
-    excluded = {"content-encoding", "transfer-encoding", "set-cookie", "connection"}
+    # `content-length` is excluded because httpx auto-decompresses the body,
+    # so the decoded length doesn't match the upstream Content-Length.
+    excluded = {
+        "content-encoding",
+        "transfer-encoding",
+        "set-cookie",
+        "connection",
+        "content-length",
+    }
     headers = {k: v for k, v in resp.headers.items() if k.lower() not in excluded}
 
     return Response(
