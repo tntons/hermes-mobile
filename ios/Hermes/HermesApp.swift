@@ -14,6 +14,18 @@ struct HermesApp: App {
 
     init() {
         HermesBackgroundTasks.register()
+        // Debug helper: if launched with `-autoConfigure <token>`, pre-fill the
+        // keychain with the test gateway URL so we can verify SessionListView
+        // appears without manual FirstRunView entry.
+        let args = ProcessInfo.processInfo.arguments
+        if let idx = args.firstIndex(of: "-autoConfigureToken"),
+           idx + 1 < args.count {
+            let token = args[idx + 1]
+            NSLog("[Hermes][Boot] -autoConfigureToken detected, prefilling keychain")
+            KeychainStore.shared.gatewayURL = URL(string: "http://localhost:8080")
+            KeychainStore.shared.bearerToken = token
+            NSLog("[Hermes][Boot] isConfigured=%d", KeychainStore.shared.isConfigured ? 1 : 0)
+        }
     }
 
     var body: some Scene {
@@ -50,6 +62,7 @@ struct RootView: View {
             }
         }
         .onAppear {
+            appState.reloadAuth()
             if KeychainStore.shared.isConfigured {
                 apiConfig.reload()
             }

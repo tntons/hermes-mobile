@@ -3,6 +3,8 @@
 //  Hermes
 //
 //  Wrapper over KeychainAccess for the bridge URL, bearer token, profile, and APNs token.
+//  Falls back to UserDefaults when the iOS Simulator's keychain is unavailable
+//  (no signing identity → no application-identifier entitlement).
 //
 
 import Foundation
@@ -13,6 +15,8 @@ public final class KeychainStore: @unchecked Sendable {
 
     private let keychain: Keychain
     private let service = "com.hermes.mobile"
+    private let useFallback: Bool
+    private let defaults = UserDefaults(suiteName: "com.hermes.mobile.dev-store") ?? .standard
 
     public enum Key: String {
         case gatewayURL = "gatewayURL"
@@ -27,88 +31,100 @@ public final class KeychainStore: @unchecked Sendable {
         self.keychain = Keychain(service: service)
             .accessibility(.afterFirstUnlockThisDeviceOnly)
             .synchronizable(false)
+
+        // Sanity-test the keychain at startup so any entitlement/permission
+        // problem surfaces in the log immediately instead of silently failing.
+        var keychainOK = false
+        do {
+            try keychain.set("ok", key: "_keychain_smoketest")
+            let readBack = try keychain.getString("_keychain_smoketest")
+            try? keychain.remove("_keychain_smoketest")
+            NSLog("[Hermes][Keychain] smoketest readback=%@", readBack ?? "nil")
+            keychainOK = (readBack == "ok")
+        } catch {
+            NSLog("[Hermes][Keychain] smoketest FAILED — falling back to UserDefaults: %@", "\(error)")
+        }
+        self.useFallback = !keychainOK
+        if useFallback {
+            NSLog("[Hermes][Keychain] WARNING: using UserDefaults fallback (no app-identifier entitlement). NOT for production.")
+        }
+    }
+
+    private func _set(_ key: Key, _ value: String?) {
+        if useFallback {
+            defaults.set(value, forKey: "hc." + key.rawValue)
+            return
+        }
+        do {
+            if let v = value, !v.isEmpty {
+                try keychain.set(v, key: key.rawValue)
+            } else {
+                try keychain.remove(key.rawValue)
+            }
+        } catch {
+            NSLog("[Hermes][Keychain] set %@ failed (using fallback): %@", key.rawValue, "\(error)")
+            defaults.set(value, forKey: "hc." + key.rawValue)
+        }
+    }
+
+    private func _get(_ key: Key) -> String? {
+        if useFallback {
+            return defaults.string(forKey: "hc." + key.rawValue)
+        }
+        do {
+            return try keychain.getString(key.rawValue)
+        } catch {
+            NSLog("[Hermes][Keychain] get %@ failed (using fallback): %@", key.rawValue, "\(error)")
+            return defaults.string(forKey: "hc." + key.rawValue)
+        }
     }
 
     // MARK: - Gateway URL
 
     public var gatewayURL: URL? {
         get {
-            guard let s = try? keychain.getString(Key.gatewayURL.rawValue),
-                  let url = URL(string: s)
-            else { return nil }
+            guard let s = _get(.gatewayURL), let url = URL(string: s) else { return nil }
             return url
         }
-        set {
-            if let v = newValue?.absoluteString {
-                try? keychain.set(v, key: Key.gatewayURL.rawValue)
-            } else {
-                try? keychain.remove(Key.gatewayURL.rawValue)
-            }
-        }
+        set { _set(.gatewayURL, newValue?.absoluteString) }
     }
 
     // MARK: - Bearer token
 
     public var bearerToken: String? {
-        get { (try? keychain.getString(Key.bearerToken.rawValue)) ?? nil }
-        set {
-            if let v = newValue, !v.isEmpty {
-                try? keychain.set(v, key: Key.bearerToken.rawValue)
-            } else {
-                try? keychain.remove(Key.bearerToken.rawValue)
-            }
-        }
+        get { _get(.bearerToken) }
+        set { _set(.bearerToken, newValue) }
     }
 
     // MARK: - Profile
 
     public var profile: String? {
-        get { try? keychain.getString(Key.profile.rawValue) }
-        set {
-            if let v = newValue, !v.isEmpty {
-                try? keychain.set(v, key: Key.profile.rawValue)
-            } else {
-                try? keychain.remove(Key.profile.rawValue)
-            }
-        }
+        get { _get(.profile) }
+        set { _set(.profile, newValue) }
     }
 
     // MARK: - APNs device token
 
     public var deviceToken: String? {
-        get { try? keychain.getString(Key.deviceToken.rawValue) }
-        set {
-            if let v = newValue, !v.isEmpty {
-                try? keychain.set(v, key: Key.deviceToken.rawValue)
-            } else {
-                try? keychain.remove(Key.deviceToken.rawValue)
-            }
-        }
+        get { _get(.deviceToken) }
+        set { _set(.deviceToken, newValue) }
     }
 
     public var apnsTokenCached: Bool {
-        get { (try? keychain.getString(Key.apnsTokenCached.rawValue)) == "1" }
-        set {
-            try? keychain.set(newValue ? "1" : "0", key: Key.apnsTokenCached.rawValue)
-        }
+        get { _get(.apnsTokenCached) == "1" }
+        set { _set(.apnsTokenCached, newValue ? "1" : "0") }
     }
 
     public var sessionID: String? {
-        get { try? keychain.getString(Key.sessionID.rawValue) }
-        set {
-            if let v = newValue, !v.isEmpty {
-                try? keychain.set(v, key: Key.sessionID.rawValue)
-            } else {
-                try? keychain.remove(Key.sessionID.rawValue)
-            }
-        }
+        get { _get(.sessionID) }
+        set { _set(.sessionID, newValue) }
     }
 
     // MARK: - Reset
 
     public func wipe() {
         for k in [Key.gatewayURL, .bearerToken, .profile, .deviceToken, .apnsTokenCached, .sessionID] {
-            try? keychain.remove(k.rawValue)
+            _set(k, nil)
         }
     }
 
