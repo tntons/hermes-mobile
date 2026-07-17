@@ -32,11 +32,11 @@ struct MarkdownText: View {
         case .quote(let text):
             HStack(alignment: .top, spacing: 8) {
                 Rectangle()
-                    .fill(Color.secondary.opacity(0.35))
+                    .fill(HermesTheme.accent.opacity(0.7))
                     .frame(width: 2)
                 Text(text)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 16))
+                    .foregroundStyle(HermesTheme.textSecondary)
                     .textSelection(.enabled)
             }
         }
@@ -55,6 +55,8 @@ private struct ProseText: View {
             options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
         ) {
             Text(attributed)
+                .font(.system(size: 16))
+                .foregroundStyle(HermesTheme.textPrimary)
                 .textSelection(.enabled)
                 .environment(\.openURL, OpenURLAction { url in
                     UIApplication.shared.open(url)
@@ -62,6 +64,8 @@ private struct ProseText: View {
                 })
         } else {
             Text(text)
+                .font(.system(size: 16))
+                .foregroundStyle(HermesTheme.textPrimary)
                 .textSelection(.enabled)
         }
     }

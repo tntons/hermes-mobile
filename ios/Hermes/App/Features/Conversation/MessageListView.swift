@@ -32,6 +32,7 @@ struct MessageListView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 8)
             }
+            .background(HermesTheme.background)
             .contentMargins(.top, 4, for: .scrollContent)
             .contentMargins(.bottom, 4, for: .scrollContent)
             .onAppear {

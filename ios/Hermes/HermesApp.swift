@@ -5,6 +5,19 @@
 
 import SwiftUI
 
+enum HermesTheme {
+    static let background = Color(red: 0.125, green: 0.125, blue: 0.125)
+    static let surface = Color(red: 0.180, green: 0.180, blue: 0.180)
+    static let surfaceElevated = Color(red: 0.220, green: 0.220, blue: 0.220)
+    static let userBubble = Color(red: 0.184, green: 0.184, blue: 0.184)
+    static let border = Color.white.opacity(0.12)
+    static let textPrimary = Color.white.opacity(0.94)
+    static let textSecondary = Color.white.opacity(0.64)
+    static let textTertiary = Color.white.opacity(0.42)
+    static let accent = Color(red: 0.42, green: 0.82, blue: 0.60)
+    static let accentSoft = Color(red: 0.25, green: 0.50, blue: 0.37)
+}
+
 @main
 struct HermesApp: App {
     @State private var appState = AppState()
@@ -42,6 +55,8 @@ struct HermesApp: App {
             RootView()
                 .environment(appState)
                 .environment(apiConfig)
+                .tint(HermesTheme.accent)
+                .preferredColorScheme(.dark)
                 .onChange(of: scenePhase) { _, new in
                     appState.scenePhase = new
                     if new == .background {

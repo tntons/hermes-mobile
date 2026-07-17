@@ -30,6 +30,7 @@ struct SessionListView: View {
                                 ForEach(group.items) { session in
                                     sessionRow(session)
                                     .buttonStyle(.plain)
+                                    .listRowBackground(HermesTheme.background)
                                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                         Button(role: .destructive) {
                                             Task { await viewModel.delete(session) }
@@ -54,10 +55,14 @@ struct SessionListView: View {
                             }
                         }
                     }
+                    .scrollContentBackground(.hidden)
+                    .listStyle(.insetGrouped)
                 }
             }
+            .background(HermesTheme.background.ignoresSafeArea())
             .refreshable { await viewModel.refresh() }
             .navigationTitle("Sessions")
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
@@ -78,7 +83,7 @@ struct SessionListView: View {
                 if let msg = viewModel.errorMessage {
                     Label(msg, systemImage: "exclamationmark.triangle")
                         .padding()
-                        .background(Color.secondary.opacity(0.15), in: .rect(cornerRadius: 8))
+                        .background(HermesTheme.surface, in: .rect(cornerRadius: 8))
                         .padding()
                 }
             }
@@ -167,17 +172,18 @@ private struct SessionRow: View {
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
-                Circle().fill(Color.accentColor.opacity(0.15))
+                Circle().fill(HermesTheme.accentSoft.opacity(0.52))
                 Image(systemName: "bubble.left")
                     .font(.title3)
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(HermesTheme.accent)
             }
             .frame(width: 36, height: 36)
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(session.title)
-                        .font(.headline)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(HermesTheme.textPrimary)
                         .lineLimit(1)
                     if session.pinned { Image(systemName: "pin.fill").font(.caption2).foregroundStyle(.yellow) }
                     if let m = session.model, !m.isEmpty {
@@ -185,7 +191,7 @@ private struct SessionRow: View {
                             .font(.caption2)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Color.secondary.opacity(0.15), in: .capsule)
+                            .background(HermesTheme.surfaceElevated, in: .capsule)
                     }
                 }
                 HStack {
@@ -195,12 +201,12 @@ private struct SessionRow: View {
                     }
                 }
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(HermesTheme.textSecondary)
             }
             Spacer()
             Text(session.displayTimestamp, style: .relative)
                 .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(HermesTheme.textTertiary)
         }
         .padding(.vertical, 4)
     }

@@ -48,10 +48,12 @@ struct ConversationView: View {
                 .padding(.top, 8)
             }
         }
+        .background(HermesTheme.background.ignoresSafeArea())
         .navigationTitle(viewModel.titleDraft)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarBackground(.bar, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {

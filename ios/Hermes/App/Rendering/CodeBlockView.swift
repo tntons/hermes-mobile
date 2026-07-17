@@ -28,11 +28,11 @@ struct CodeBlockView: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color.secondary.opacity(0.06))
+                .fill(HermesTheme.surface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.secondary.opacity(0.22), lineWidth: 0.5)
+                .stroke(HermesTheme.border, lineWidth: 0.5)
         )
     }
 
@@ -41,7 +41,7 @@ struct CodeBlockView: View {
             Text((language ?? "code").uppercased())
                 .font(.system(size: 10, weight: .semibold))
                 .tracking(0.8)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(HermesTheme.textSecondary)
             Spacer(minLength: 4)
             Button {
                 UIPasteboard.general.string = code
@@ -59,7 +59,7 @@ struct CodeBlockView: View {
                             .font(.caption2.weight(.medium))
                     }
                 }
-                .foregroundStyle(copyState == .copied ? .green : .secondary)
+                .foregroundStyle(copyState == .copied ? .green : HermesTheme.textSecondary)
             }
             .buttonStyle(.plain)
         }
@@ -67,7 +67,7 @@ struct CodeBlockView: View {
         .padding(.vertical, 6)
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(Color.secondary.opacity(0.18))
+                .fill(HermesTheme.border)
                 .frame(height: 0.5)
         }
     }
@@ -76,7 +76,7 @@ struct CodeBlockView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             Text(SyntaxHighlighter.highlight(code, language: language))
                 .font(.system(.caption, design: .monospaced))
-                .foregroundStyle(.primary)
+                .foregroundStyle(HermesTheme.textPrimary)
                 .textSelection(.enabled)
                 .lineSpacing(2)
                 .padding(.horizontal, 10)

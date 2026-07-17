@@ -28,7 +28,7 @@ struct MessageCell: View {
             }
         case .assistant:
             HStack(alignment: .top, spacing: 10) {
-                avatar(symbol: "sparkles", tint: .accentColor, fill: true)
+                avatar(symbol: "sparkles", tint: HermesTheme.accent, fill: true)
                 VStack(alignment: .leading, spacing: 10) {
                     if !message.reasoning.isEmpty {
                         ReasoningCard(text: message.reasoning, isStreaming: isStreaming && message.text.isEmpty)
@@ -55,7 +55,7 @@ struct MessageCell: View {
                 Spacer()
                 Text(message.text)
                     .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(HermesTheme.textSecondary)
                     .multilineTextAlignment(.center)
                 Spacer()
             }
@@ -68,8 +68,8 @@ struct MessageCell: View {
     private var userBubble: some View {
         VStack(alignment: .trailing, spacing: 4) {
             Text(message.text)
-                .font(.body)
-                .foregroundStyle(.white)
+                .font(.system(size: 16))
+                .foregroundStyle(HermesTheme.textPrimary)
                 // No .textSelection here — text selection adds 3 gesture
                 // recognizers (UITapGestureRecognizer, UILongPressGestureRecognizer,
                 // UIPanGestureRecognizer) that compete with the nav bar back
@@ -78,17 +78,17 @@ struct MessageCell: View {
                 // is handled via the confirmationDialog below.
                 .padding(.vertical, 10)
                 .padding(.horizontal, 14)
-                .background(Color.accentColor, in: asymmetricBubble)
+                .background(HermesTheme.userBubble, in: asymmetricBubble)
             HStack(spacing: 6) {
                 Text(message.timestamp, style: .time)
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(HermesTheme.textTertiary)
                 Button {
                     userMenuShown = true
                 } label: {
                     Image(systemName: "ellipsis")
                         .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(HermesTheme.textTertiary)
                         .padding(4)
                 }
                 .buttonStyle(.plain)
@@ -120,7 +120,7 @@ struct MessageCell: View {
     private func avatar(symbol: String, tint: Color, fill: Bool) -> some View {
         ZStack {
             Circle()
-                .fill(fill ? tint.opacity(0.18) : Color.secondary.opacity(0.10))
+                .fill(fill ? HermesTheme.accentSoft.opacity(0.52) : HermesTheme.surfaceElevated)
             Image(systemName: symbol)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(tint)
@@ -150,25 +150,25 @@ struct ReasoningCard: View {
                 } else {
                     Image(systemName: "brain.head.profile")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(HermesTheme.textSecondary)
                 }
                 Text("Thought for \(estimatedSeconds)s")
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(HermesTheme.textSecondary)
                 Spacer(minLength: 8)
                 Button {
                     withAnimation(.snappy(duration: 0.18)) { expanded.toggle() }
                 } label: {
                     Image(systemName: expanded ? "chevron.up" : "chevron.down")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(HermesTheme.textSecondary)
                 }
                 .buttonStyle(.plain)
             }
             if expanded {
                 Text(text)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 15))
+                    .foregroundStyle(HermesTheme.textSecondary)
                     // No .textSelection here — same gesture-recognizer
                     // rationale as the user bubble. Reasoning text is rarely
                     // at scroll position 0 (the user's own messages push it
@@ -178,8 +178,8 @@ struct ReasoningCard: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
             } else {
                 Text(preview)
-                    .font(.callout)
-                    .foregroundStyle(.tertiary)
+                    .font(.system(size: 15))
+                    .foregroundStyle(HermesTheme.textTertiary)
                     .lineLimit(1)
                     .transition(.opacity)
             }
@@ -189,10 +189,10 @@ struct ReasoningCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.orange.opacity(0.10))
+                .fill(HermesTheme.surface)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.orange.opacity(0.22), lineWidth: 0.5)
+                        .stroke(HermesTheme.border, lineWidth: 0.5)
                 )
         )
     }
@@ -211,7 +211,7 @@ private struct PulsingDot: View {
         HStack(spacing: 3) {
             ForEach(0..<3, id: \.self) { i in
                 Circle()
-                    .fill(Color.secondary)
+                    .fill(HermesTheme.textSecondary)
                     .frame(width: 4, height: 4)
                     .modifier(Pulse(delay: Double(i) * 0.18))
             }
@@ -268,17 +268,17 @@ struct ToolCallCard: View {
                     }
                     Text(titleText)
                         .font(.caption.weight(.medium))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(HermesTheme.textSecondary)
                     Spacer(minLength: 4)
                     if let d = duration {
                         Text(String(format: "%.1fs", d))
                             .font(.caption2.monospacedDigit())
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(HermesTheme.textTertiary)
                     }
                     if hasExpandableContent {
                         Image(systemName: expanded ? "chevron.down" : "chevron.right")
                             .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(HermesTheme.textTertiary)
                     }
                 }
                 .contentShape(.rect)
@@ -293,14 +293,14 @@ struct ToolCallCard: View {
                         Text("OUTPUT")
                             .font(.system(size: 10, weight: .semibold))
                             .tracking(0.8)
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(HermesTheme.textTertiary)
                         Spacer()
                         Button {
                             UIPasteboard.general.string = preview ?? args?.preview ?? ""
                         } label: {
                             Image(systemName: "doc.on.doc")
                                 .font(.caption2)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(HermesTheme.textSecondary)
                         }
                         .buttonStyle(.plain)
                     }
@@ -309,7 +309,7 @@ struct ToolCallCard: View {
                     ScrollView {
                         Text(preview ?? args?.preview ?? "")
                             .font(.system(.caption, design: .monospaced))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(HermesTheme.textSecondary)
                             // No .textSelection here — the expanded tool
                             // output has its own copy button (the header
                             // row above), and the scrollview's text would
@@ -392,14 +392,14 @@ struct ApprovalCard: View {
             Text(approval.command)
                 .font(.callout.monospaced())
                 .padding(8)
-                .background(Color.secondary.opacity(0.1), in: .rect(cornerRadius: 6))
+                .background(HermesTheme.surfaceElevated, in: .rect(cornerRadius: 6))
                 // No .textSelection — approval commands are short, the
                 // user copies via the system share/select-all if needed.
                 .lineLimit(3)
                 .truncationMode(.tail)
             Text(approval.description)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(HermesTheme.textSecondary)
                 .lineLimit(2)
                 .truncationMode(.tail)
             HStack {
@@ -413,7 +413,11 @@ struct ApprovalCard: View {
             }
         }
         .padding(12)
-        .background(Color.yellow.opacity(0.10), in: .rect(cornerRadius: 12))
+        .background(HermesTheme.surface, in: .rect(cornerRadius: 12))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.yellow.opacity(0.22), lineWidth: 0.5)
+        }
     }
 }
 
@@ -426,10 +430,10 @@ struct TerminalBadge: View {
             switch state {
             case .success:
                 Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
-                Text("Complete").font(.caption).foregroundStyle(.secondary)
+                Text("Complete").font(.caption).foregroundStyle(HermesTheme.textSecondary)
             case .cancelled:
-                Image(systemName: "stop.circle").foregroundStyle(.secondary)
-                Text("Cancelled").font(.caption).foregroundStyle(.secondary)
+                Image(systemName: "stop.circle").foregroundStyle(HermesTheme.textSecondary)
+                Text("Cancelled").font(.caption).foregroundStyle(HermesTheme.textSecondary)
             case .error(let m):
                 Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
                 Text(m)
