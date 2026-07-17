@@ -8,6 +8,7 @@ import SwiftUI
 struct ConversationView: View {
     @Environment(AppState.self) private var appState
     @Environment(APIConfig.self) private var apiConfig
+    @Environment(\.dismiss) private var dismiss
     @State var sessionID: String
     @State var title: String
     @State private var viewModel: ConversationViewModel
@@ -50,9 +51,23 @@ struct ConversationView: View {
         }
         .navigationTitle(viewModel.titleDraft)
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarBackground(.bar, for: .navigationBar)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    dismiss()
+                } label: {
+                    HStack(spacing: 2) {
+                        Image(systemName: "chevron.left")
+                            .font(.body.weight(.medium))
+                        Text("Sessions")
+                            .font(.body)
+                    }
+                    .foregroundStyle(.tint)
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     renaming = true

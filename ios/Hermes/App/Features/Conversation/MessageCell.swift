@@ -70,22 +70,30 @@ struct MessageCell: View {
             Text(message.text)
                 .font(.body)
                 .foregroundStyle(.white)
-                .textSelection(.enabled)
+                // No .textSelection here — text selection adds 3 gesture
+                // recognizers (UITapGestureRecognizer, UILongPressGestureRecognizer,
+                // UIPanGestureRecognizer) that compete with the nav bar back
+                // button when the user bubble is scrolled near the top of the
+                // ScrollView. User messages don't need inline selection; copy
+                // is handled via the confirmationDialog below.
                 .padding(.vertical, 10)
                 .padding(.horizontal, 14)
                 .background(Color.accentColor, in: asymmetricBubble)
-                // .contextMenu { userMenu }  ← moved off the bubble background.
-                // Attaching .contextMenu to the bubble's background modifier
-                // made the gesture recognizer's hit area extend across the
-                // full row, which then intercepted taps intended for the nav
-                // bar's back chevron when the message was scrolled near the top.
-                .onLongPressGesture(minimumDuration: 0.5) {
+            HStack(spacing: 6) {
+                Text(message.timestamp, style: .time)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                Button {
                     userMenuShown = true
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .padding(4)
                 }
-            Text(message.timestamp, style: .time)
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .padding(.trailing, 4)
+                .buttonStyle(.plain)
+            }
+            .padding(.trailing, 4)
         }
         .confirmationDialog("Message actions", isPresented: $userMenuShown, titleVisibility: .hidden) {
             Button("Copy") { UIPasteboard.general.string = message.text }
@@ -161,7 +169,11 @@ struct ReasoningCard: View {
                 Text(text)
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
+                    // No .textSelection here — same gesture-recognizer
+                    // rationale as the user bubble. Reasoning text is rarely
+                    // at scroll position 0 (the user's own messages push it
+                    // down), but removing it costs nothing and removes one
+                    // more potential tap-eater.
                     .padding(.top, 2)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             } else {
@@ -298,7 +310,11 @@ struct ToolCallCard: View {
                         Text(preview ?? args?.preview ?? "")
                             .font(.system(.caption, design: .monospaced))
                             .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
+                            // No .textSelection here — the expanded tool
+                            // output has its own copy button (the header
+                            // row above), and the scrollview's text would
+                            // otherwise add 3 more gesture recognizers that
+                            // could compete with the nav bar.
                             .lineLimit(fullyExpanded ? nil : 5)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -377,7 +393,8 @@ struct ApprovalCard: View {
                 .font(.callout.monospaced())
                 .padding(8)
                 .background(Color.secondary.opacity(0.1), in: .rect(cornerRadius: 6))
-                .textSelection(.enabled)
+                // No .textSelection — approval commands are short, the
+                // user copies via the system share/select-all if needed.
                 .lineLimit(3)
                 .truncationMode(.tail)
             Text(approval.description)
