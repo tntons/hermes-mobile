@@ -136,12 +136,6 @@ struct ReasoningCard: View {
     let isStreaming: Bool
     @State private var expanded: Bool = false
 
-    private var preview: String {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.count <= 80 { return trimmed }
-        return String(trimmed.prefix(80)) + "…"
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
@@ -152,7 +146,7 @@ struct ReasoningCard: View {
                         .font(.caption)
                         .foregroundStyle(HermesTheme.textSecondary)
                 }
-                Text("Thought for \(estimatedSeconds)s")
+                Text(isStreaming ? "Thinking…" : "Thought for \(estimatedSeconds)s")
                     .font(.caption.weight(.medium))
                     .foregroundStyle(HermesTheme.textSecondary)
                 Spacer(minLength: 8)
@@ -176,12 +170,6 @@ struct ReasoningCard: View {
                     // more potential tap-eater.
                     .padding(.top, 2)
                     .transition(.opacity.combined(with: .move(edge: .top)))
-            } else {
-                Text(preview)
-                    .font(.system(size: 15))
-                    .foregroundStyle(HermesTheme.textTertiary)
-                    .lineLimit(1)
-                    .transition(.opacity)
             }
         }
         .padding(.horizontal, 12)

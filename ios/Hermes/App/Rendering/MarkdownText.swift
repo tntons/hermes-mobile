@@ -2,9 +2,7 @@
 //  MarkdownText.swift
 //  Hermes
 //
-//  Native markdown renderer. Splits the input into typed segments
-//  (prose / code / quote) via MarkdownParser and renders each in
-//  pure SwiftUI. Replaces the previous WKWebView path.
+//  Native block-aware Markdown renderer for conversation messages.
 //
 
 import SwiftUI
@@ -13,9 +11,8 @@ struct MarkdownText: View {
     let text: String
 
     var body: some View {
-        let segments = MarkdownParser.parse(text)
-        return VStack(alignment: .leading, spacing: 8) {
-            ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(Array(MarkdownParser.parse(text).enumerated()), id: \.offset) { _, segment in
                 view(for: segment)
             }
         }
@@ -26,27 +23,54 @@ struct MarkdownText: View {
     private func view(for segment: MarkdownSegment) -> some View {
         switch segment {
         case .prose(let text):
-            ProseText(text: text)
+            InlineMarkdownText(text: text)
+        case .heading(let level, let text):
+            InlineMarkdownText(text: text)
+                .font(headingFont(for: level))
+                .foregroundStyle(HermesTheme.textPrimary)
+                .padding(.top, level <= 2 ? 5 : 2)
         case .code(let language, let code):
             CodeBlockView(language: language, code: code)
         case .quote(let text):
-            HStack(alignment: .top, spacing: 8) {
-                Rectangle()
+            HStack(alignment: .top, spacing: 10) {
+                RoundedRectangle(cornerRadius: 1)
                     .fill(HermesTheme.accent.opacity(0.7))
-                    .frame(width: 2)
-                Text(text)
-                    .font(.system(size: 16))
+                    .frame(width: 3)
+                InlineMarkdownText(text: text)
                     .foregroundStyle(HermesTheme.textSecondary)
-                    .textSelection(.enabled)
             }
+            .padding(.vertical, 2)
+        case .list(let items, let ordered):
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                    HStack(alignment: .top, spacing: 10) {
+                        Text(ordered ? "\(index + 1)." : "•")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(HermesTheme.accent)
+                            .frame(minWidth: ordered ? 22 : 12, alignment: .trailing)
+                        InlineMarkdownText(text: item)
+                    }
+                }
+            }
+        case .divider:
+            Rectangle()
+                .fill(HermesTheme.border)
+                .frame(height: 1)
+                .padding(.vertical, 4)
+        }
+    }
+
+    private func headingFont(for level: Int) -> Font {
+        switch level {
+        case 1: return .system(size: 24, weight: .bold)
+        case 2: return .system(size: 20, weight: .bold)
+        case 3: return .system(size: 18, weight: .semibold)
+        default: return .system(size: 16, weight: .semibold)
         }
     }
 }
 
-/// Renders prose as `AttributedString(markdown:)` so bold / italic /
-/// inline code / links get native styling. Fallback to plain `Text` if
-/// AttributedString parsing fails.
-private struct ProseText: View {
+private struct InlineMarkdownText: View {
     let text: String
 
     var body: some View {
@@ -57,6 +81,7 @@ private struct ProseText: View {
             Text(attributed)
                 .font(.system(size: 16))
                 .foregroundStyle(HermesTheme.textPrimary)
+                .lineSpacing(4)
                 .textSelection(.enabled)
                 .environment(\.openURL, OpenURLAction { url in
                     UIApplication.shared.open(url)
@@ -66,6 +91,7 @@ private struct ProseText: View {
             Text(text)
                 .font(.system(size: 16))
                 .foregroundStyle(HermesTheme.textPrimary)
+                .lineSpacing(4)
                 .textSelection(.enabled)
         }
     }
