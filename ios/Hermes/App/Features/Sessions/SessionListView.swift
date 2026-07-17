@@ -13,6 +13,7 @@ struct SessionListView: View {
     @State private var showNew: Bool = false
     @State private var renaming: Session?
     @State private var renameDraft: String = ""
+    @State private var streamingLockedSession: Session?
 
     var body: some View {
         NavigationStack {
@@ -29,7 +30,7 @@ struct SessionListView: View {
                             Section(group.title) {
                                 ForEach(group.items) { session in
                                     Button {
-                                        presentingConversationFor = session
+                                        openSession(session)
                                     } label: {
                                         SessionRow(session: session)
                                     }
@@ -111,6 +112,18 @@ struct SessionListView: View {
                     }
                 }
             }
+            .alert(
+                "Session is streaming",
+                isPresented: Binding(
+                    get: { streamingLockedSession != nil },
+                    set: { if !$0 { streamingLockedSession = nil } }
+                ),
+                presenting: streamingLockedSession
+            ) { _ in
+                Button("OK", role: .cancel) {}
+            } message: { session in
+                Text("'\(session.title)' is actively streaming on another device. Wait for the current turn to finish, then try again.")
+            }
             .sheet(isPresented: $presentSettings) {
                 SettingsView()
                     .environment(appState)
@@ -130,6 +143,20 @@ struct SessionListView: View {
     }
 
     @State private var presentSettings: Bool = false
+
+    /// Open a session for read access. If `is_streaming == true`, the
+    /// desktop (or another client) is actively working on this session and
+    /// opening it here would trip webui's `_clear_stale_stream_state`
+    /// self-heal (the desktop and webui have isolated in-memory stream
+    /// registries but share on-disk state). Refuse and surface a banner
+    /// instead — the user can retry once the desktop turn finishes.
+    private func openSession(_ session: Session) {
+        if session.is_streaming == true {
+            streamingLockedSession = session
+        } else {
+            presentingConversationFor = session
+        }
+    }
 }
 
 private struct SessionRow: View {
