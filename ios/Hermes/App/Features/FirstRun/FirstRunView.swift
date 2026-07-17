@@ -7,14 +7,34 @@ import SwiftUI
 
 struct FirstRunView: View {
     @Environment(AppState.self) private var appState
+    @Environment(APIConfig.self) private var apiConfig
     @State private var viewModel = FirstRunViewModel()
     @FocusState private var focused: Field?
     private enum Field: Hashable { case url, token, profile }
+    private let onFinished: () -> Void
+
+    init(onFinished: @escaping () -> Void = {}) {
+        self.onFinished = onFinished
+    }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 Form {
+#if DEBUG
+                    Section("Preview") {
+                        Button {
+                            viewModel.continueAsMock(appState: appState)
+                            apiConfig.reload()
+                            onFinished()
+                        } label: {
+                            Label("Continue as demo user", systemImage: "person.crop.circle.badge.checkmark")
+                        }
+                        Text("Uses local sample data and does not require a bridge.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+#endif
                     Section("Bridge") {
                         TextField("Gateway URL (https://…)", text: $viewModel.gatewayURLString)
                             .textInputAutocapitalization(.never)
@@ -64,7 +84,13 @@ struct FirstRunView: View {
                 }
 
                 Button {
-                    Task { await viewModel.saveAndContinue(appState: appState) }
+                    Task {
+                        await viewModel.saveAndContinue(appState: appState)
+                        if viewModel.errorMessage == nil {
+                            apiConfig.reload()
+                            onFinished()
+                        }
+                    }
                 } label: {
                     Text("Save and continue")
                         .frame(maxWidth: .infinity)

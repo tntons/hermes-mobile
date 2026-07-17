@@ -15,16 +15,23 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Connection") {
-                    LabeledContent("Gateway URL") {
-                        Text(apiConfig.gatewayURL?.absoluteString ?? "—")
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                            .font(.caption.monospaced())
-                    }
-                    LabeledContent("Token") {
-                        Text(maskToken(apiConfig.bearerToken))
-                            .font(.caption.monospaced())
+                Section(apiConfig.isMock ? "Demo account" : "Connection") {
+                    if apiConfig.isMock {
+                        LabeledContent("Account", value: "Demo user")
+                        Text("Running with local sample data. No bridge connection is required.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        LabeledContent("Gateway URL") {
+                            Text(apiConfig.gatewayURL?.absoluteString ?? "—")
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .font(.caption.monospaced())
+                        }
+                        LabeledContent("Token") {
+                            Text(maskToken(apiConfig.bearerToken))
+                                .font(.caption.monospaced())
+                        }
                     }
                     if let profile = KeychainStore.shared.profile, !profile.isEmpty {
                         LabeledContent("Profile", value: profile)
@@ -62,8 +69,12 @@ struct SettingsView: View {
                 }
             }
             .sheet(isPresented: $showReauth) {
-                FirstRunView()
+                FirstRunView {
+                    showReauth = false
+                    dismiss()
+                }
                     .environment(appState)
+                    .environment(apiConfig)
             }
         }
     }

@@ -14,10 +14,16 @@ public final class SessionListViewModel {
     public var errorMessage: String?
 
     private var client: HermesClient?
+    private var isMock = false
 
     public init() {}
 
     public func bootstrap(config: APIConfig) async {
+        if config.isMock {
+            isMock = true
+            sessions = MockData.sessions
+            return
+        }
         guard config.isConfigured,
               let url = config.gatewayURL,
               let token = config.bearerToken
@@ -47,6 +53,22 @@ public final class SessionListViewModel {
     }
 
     public func newSession(model: String? = nil) async -> Session? {
+        if isMock {
+            let now = Date.now.timeIntervalSince1970
+            let session = Session(
+                session_id: UUID().uuidString,
+                title: "New demo session",
+                workspace: "~/demo-workspace",
+                model: model ?? "demo-model",
+                model_provider: "Mock",
+                created_at: now,
+                updated_at: now,
+                last_message_at: now,
+                profile: "demo"
+            )
+            sessions.insert(session, at: 0)
+            return session
+        }
         guard let client = client else { return nil }
         let profile = KeychainStore.shared.profile
         do {
@@ -61,6 +83,10 @@ public final class SessionListViewModel {
     }
 
     public func rename(_ sessionID: String, to title: String) async {
+        if isMock {
+            updateSession(sessionID) { $0.title = title; $0.updated_at = Date.now.timeIntervalSince1970 }
+            return
+        }
         guard let client = client else { return }
         do {
             try await client.renameSession(sessionID: sessionID, to: title)
@@ -76,6 +102,10 @@ public final class SessionListViewModel {
     }
 
     public func togglePin(_ session: Session) async {
+        if isMock {
+            updateSession(session.session_id) { $0.pinned.toggle() }
+            return
+        }
         guard let client = client else { return }
         do {
             try await client.setSessionPinned(sessionID: session.session_id, pinned: !session.pinned)
@@ -86,6 +116,10 @@ public final class SessionListViewModel {
     }
 
     public func toggleArchive(_ session: Session) async {
+        if isMock {
+            updateSession(session.session_id) { $0.archived.toggle() }
+            return
+        }
         guard let client = client else { return }
         do {
             try await client.setSessionArchived(sessionID: session.session_id, archived: !session.archived)
@@ -96,6 +130,10 @@ public final class SessionListViewModel {
     }
 
     public func delete(_ session: Session) async {
+        if isMock {
+            sessions.removeAll { $0.session_id == session.session_id }
+            return
+        }
         guard let client = client else { return }
         do {
             try await client.deleteSession(sessionID: session.session_id)
@@ -120,6 +158,68 @@ public final class SessionListViewModel {
         let todayStart = cal.startOfDay(for: now)
         let yesterdayStart = cal.date(byAdding: .day, value: -1, to: todayStart)!
         return HermesListGroup.group(sessions, today: todayStart, yesterday: yesterdayStart)
+    }
+
+    private func updateSession(_ sessionID: String, _ update: (inout Session) -> Void) {
+        guard let index = sessions.firstIndex(where: { $0.session_id == sessionID }) else { return }
+        update(&sessions[index])
+    }
+}
+
+enum MockData {
+    static var sessions: [Session] {
+        let now = Date.now.timeIntervalSince1970
+        return [
+            Session(
+                session_id: "demo-session-1",
+                title: "Welcome to Hermes",
+                workspace: "~/demo-workspace",
+                model: "demo-model",
+                model_provider: "Mock",
+                message_count: 2,
+                created_at: now - 3600,
+                updated_at: now - 180,
+                last_message_at: now - 180,
+                profile: "demo"
+            ),
+            Session(
+                session_id: "demo-session-2",
+                title: "Plan a weekend project",
+                workspace: "~/demo-workspace",
+                model: "demo-model",
+                model_provider: "Mock",
+                message_count: 4,
+                created_at: now - 86_400,
+                updated_at: now - 3_600,
+                last_message_at: now - 3_600,
+                profile: "demo"
+            )
+        ]
+    }
+
+    static func messages(for sessionID: String) -> [ChatMessage] {
+        switch sessionID {
+        case "demo-session-2":
+            return [
+                .user("Help me plan a small weekend project."),
+                ChatMessage(
+                    role: .assistant,
+                    text: "Absolutely. Start with the outcome, break it into three small tasks, and leave a little time for testing.",
+                    terminal: .success,
+                    isFinal: true
+                )
+            ]
+        default:
+            return [
+                .user("What is Hermes?"),
+                ChatMessage(
+                    role: .assistant,
+                    text: "Hermes is your personal coding assistant. This demo account is running entirely from local sample data.",
+                    terminal: .success,
+                    isFinal: true
+                )
+            ]
+        }
     }
 }
 

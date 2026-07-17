@@ -42,6 +42,7 @@ public final class FirstRunViewModel {
         }
 
         let kc = KeychainStore.shared
+        kc.isMockMode = false
         kc.gatewayURL = url
         kc.bearerToken = token
         let trimmedProfile = profile.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -50,9 +51,22 @@ public final class FirstRunViewModel {
         } else {
             kc.profile = trimmedProfile
         }
+        errorMessage = nil
         appState.reloadAuth()
         HermesLog.auth.info("first-run configured gateway=\(url.absoluteString, privacy: .public)")
     }
+
+    #if DEBUG
+    public func continueAsMock(appState: AppState) {
+        let kc = KeychainStore.shared
+        kc.gatewayURL = nil
+        kc.bearerToken = nil
+        kc.profile = "demo"
+        kc.isMockMode = true
+        appState.reloadAuth()
+        HermesLog.auth.info("signed in with demo account")
+    }
+    #endif
 
     /// Probe `/health` to validate the URL + token before saving.
     public func testConnection() async {

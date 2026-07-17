@@ -20,6 +20,7 @@ public final class ConversationViewModel {
     public var titleDraft: String = ""
 
     private var client: HermesClient?
+    private var isMock = false
     private var streamTask: Task<Void, Never>?
     private var tokenFlushTask: Task<Void, Never>?
     private var pendingTokens: String = ""
@@ -35,6 +36,11 @@ public final class ConversationViewModel {
     }
 
     public func bootstrap(config: APIConfig) async {
+        if config.isMock {
+            isMock = true
+            messages = MockData.messages(for: sessionID)
+            return
+        }
         guard config.isConfigured,
               let url = config.gatewayURL,
               let token = config.bearerToken
@@ -62,6 +68,7 @@ public final class ConversationViewModel {
     }
 
     public func refreshHistory() async {
+        if isMock { return }
         guard let client = client else { return }
         do {
             let detail = try await client.fetchSessionDetail(id: sessionID)
@@ -98,6 +105,10 @@ public final class ConversationViewModel {
     // MARK: - Sending
 
     public func send() async {
+        if isMock {
+            await sendMock()
+            return
+        }
         guard let client = client else { return }
         let text = composerText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !isStreaming else { return }
@@ -137,6 +148,10 @@ public final class ConversationViewModel {
     }
 
     public func cancelStream() async {
+        if isMock {
+            isStreaming = false
+            return
+        }
         guard let client = client, let sid = currentStreamID else { return }
         try? await client.cancelStream(sid)
         streamTask?.cancel()
@@ -145,6 +160,7 @@ public final class ConversationViewModel {
 
     /// Resume an in-flight run after returning from background.
     public func resumeIfNeeded() async {
+        if isMock { return }
         guard let client = client else { return }
         let open = HermesDAO.openCursors().filter { $0.sessionID == sessionID }
         guard let cursor = open.first else { return }
@@ -157,6 +173,25 @@ public final class ConversationViewModel {
         }
         isStreaming = true
         await consume(streamID: cursor.streamID, lastEventID: cursor.lastEventID, on: messages.last!.id)
+    }
+
+    private func sendMock() async {
+        let text = composerText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !isStreaming else { return }
+        composerText = ""
+        HapticManager.play(.soft)
+        messages.append(.user(text))
+        let assistant = ChatMessage.assistant()
+        messages.append(assistant)
+        isStreaming = true
+
+        try? await Task.sleep(nanoseconds: 250_000_000)
+        guard let index = messages.firstIndex(where: { $0.id == assistant.id }) else { return }
+        messages[index].text = "Demo reply: I received \"\(text)\". Connect a bridge later to talk to a real Hermes backend."
+        messages[index].terminal = .success
+        messages[index].isFinal = true
+        isStreaming = false
+        HapticManager.play(.success)
     }
 
     // MARK: - SSE consumer

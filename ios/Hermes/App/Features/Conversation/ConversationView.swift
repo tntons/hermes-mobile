@@ -10,17 +10,15 @@ struct ConversationView: View {
     @Environment(APIConfig.self) private var apiConfig
     @State var sessionID: String
     @State var title: String
-    let onBack: () -> Void
     @State private var viewModel: ConversationViewModel
     @State private var renaming: Bool = false
     @State private var renameDraft: String = ""
     @FocusState private var composerFocused: Bool
 
-    init(sessionID: String, title: String, onBack: @escaping () -> Void = {}) {
+    init(sessionID: String, title: String) {
         _sessionID = State(initialValue: sessionID)
         _title = State(initialValue: title)
         _viewModel = State(initialValue: ConversationViewModel(sessionID: sessionID, title: title))
-        self.onBack = onBack
     }
 
     var body: some View {
@@ -52,24 +50,9 @@ struct ConversationView: View {
         }
         .navigationTitle(viewModel.titleDraft)
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarBackground(.bar, for: .navigationBar)
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    onBack()
-                } label: {
-                    HStack(spacing: 2) {
-                        Image(systemName: "chevron.left")
-                            .font(.body.weight(.medium))
-                        Text("Sessions")
-                            .font(.body)
-                    }
-                    .foregroundStyle(.tint)
-                }
-                .accessibilityIdentifier("custom-back-button")
-            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     renaming = true
@@ -84,6 +67,7 @@ struct ConversationView: View {
                 let t = renameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !t.isEmpty {
                     viewModel.titleDraft = t
+                    if apiConfig.isMock { return }
                     // Fire-and-forget; v1 doesn't surface a failed-rename toast.
                     Task {
                         guard apiConfig.isConfigured,

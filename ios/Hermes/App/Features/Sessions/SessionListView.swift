@@ -9,14 +9,13 @@ struct SessionListView: View {
     @Environment(AppState.self) private var appState
     @Environment(APIConfig.self) private var apiConfig
     @State private var viewModel = SessionListViewModel()
-    @State private var presentedSession: Session?
-    @State private var showNew: Bool = false
+    @State private var path = NavigationPath()
     @State private var renaming: Session?
     @State private var renameDraft: String = ""
     @State private var streamingLockedSession: Session?
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
                 if viewModel.sessions.isEmpty && !viewModel.isLoading {
                     ContentUnavailableView(
@@ -29,11 +28,7 @@ struct SessionListView: View {
                         ForEach(viewModel.grouped) { group in
                             Section(group.title) {
                                 ForEach(group.items) { session in
-                                    Button {
-                                        openSession(session)
-                                    } label: {
-                                        SessionRow(session: session)
-                                    }
+                                    sessionRow(session)
                                     .buttonStyle(.plain)
                                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                         Button(role: .destructive) {
@@ -73,7 +68,7 @@ struct SessionListView: View {
                     Button {
                         Task {
                             if let s = await viewModel.newSession() {
-                                presentedSession = s
+                                path.append(s)
                             }
                         }
                     } label: { Image(systemName: "plus") }
@@ -90,8 +85,7 @@ struct SessionListView: View {
             .navigationDestination(for: Session.self) { session in
                 ConversationView(
                     sessionID: session.session_id,
-                    title: session.title,
-                    onBack: { presentedSession = nil }
+                    title: session.title
                 )
                 .environment(apiConfig)
             }
@@ -136,10 +130,13 @@ struct SessionListView: View {
             .task {
                 await viewModel.bootstrap(config: apiConfig)
                 #if DEBUG
-                if ProcessInfo.processInfo.arguments.contains("-openFirstSession"),
+                if UserDefaults.standard.bool(forKey: "_debug.openFirstSession"),
                    let first = viewModel.sessions.first,
-                   presentedSession == nil {
-                    presentedSession = first
+                   path.isEmpty {
+                    // Consume this debug-only launch request so returning from
+                    // the conversation does not immediately reopen it.
+                    UserDefaults.standard.set(false, forKey: "_debug.openFirstSession")
+                    path.append(first)
                 }
                 #endif
             }
@@ -148,17 +145,18 @@ struct SessionListView: View {
 
     @State private var presentSettings: Bool = false
 
-    /// Open a session for read access. If `is_streaming == true`, the
-    /// desktop (or another client) is actively working on this session and
-    /// opening it here would trip webui's `_clear_stale_stream_state`
-    /// self-heal (the desktop and webui have isolated in-memory stream
-    /// registries but share on-disk state). Refuse and surface a banner
-    /// instead — the user can retry once the desktop turn finishes.
-    private func openSession(_ session: Session) {
+    @ViewBuilder
+    private func sessionRow(_ session: Session) -> some View {
         if session.is_streaming == true {
-            streamingLockedSession = session
+            Button {
+                streamingLockedSession = session
+            } label: {
+                SessionRow(session: session)
+            }
         } else {
-            presentedSession = session
+            NavigationLink(value: session) {
+                SessionRow(session: session)
+            }
         }
     }
 }

@@ -25,6 +25,7 @@ public final class KeychainStore: @unchecked Sendable {
         case deviceToken = "deviceToken"
         case apnsTokenCached = "apnsTokenCached"
         case sessionID = "activeSessionID"
+        case mockMode = "mockMode"
     }
 
     public init(service: String = "com.hermes.mobile") {
@@ -120,15 +121,20 @@ public final class KeychainStore: @unchecked Sendable {
         set { _set(.sessionID, newValue) }
     }
 
+    public var isMockMode: Bool {
+        get { _get(.mockMode) == "1" }
+        set { _set(.mockMode, newValue ? "1" : "0") }
+    }
+
     // MARK: - Reset
 
     public func wipe() {
-        for k in [Key.gatewayURL, .bearerToken, .profile, .deviceToken, .apnsTokenCached, .sessionID] {
+        for k in [Key.gatewayURL, .bearerToken, .profile, .deviceToken, .apnsTokenCached, .sessionID, .mockMode] {
             _set(k, nil)
         }
     }
 
     public var isConfigured: Bool {
-        gatewayURL != nil && bearerToken?.isEmpty == false
+        isMockMode || (gatewayURL != nil && bearerToken?.isEmpty == false)
     }
 }

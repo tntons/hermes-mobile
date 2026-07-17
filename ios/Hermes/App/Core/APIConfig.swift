@@ -14,6 +14,7 @@ import Observation
 public final class APIConfig {
     public private(set) var gatewayURL: URL?
     public private(set) var bearerToken: String?
+    public private(set) var isMock: Bool = false
 
     public init() {
         reload()
@@ -23,9 +24,10 @@ public final class APIConfig {
         let kc = KeychainStore.shared
         gatewayURL = kc.gatewayURL
         bearerToken = kc.bearerToken
+        isMock = kc.isMockMode
     }
 
     public var isConfigured: Bool {
-        gatewayURL != nil && (bearerToken?.isEmpty == false)
+        isMock || (gatewayURL != nil && (bearerToken?.isEmpty == false))
     }
 }

@@ -21,8 +21,13 @@ struct HermesApp: App {
         //   xcrun simctl launch booted com.hermes.mobile \
         //     -autoConfigureToken <hex> [-openFirstSession]
         let args = ProcessInfo.processInfo.arguments
+        if !KeychainStore.shared.isConfigured {
+            KeychainStore.shared.isMockMode = true
+            KeychainStore.shared.profile = "demo"
+        }
         if let idx = args.firstIndex(of: "-autoConfigureToken"),
            idx + 1 < args.count {
+            KeychainStore.shared.isMockMode = false
             KeychainStore.shared.gatewayURL = URL(string: "http://localhost:8080")
             KeychainStore.shared.bearerToken = args[idx + 1]
         }
