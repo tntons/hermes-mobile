@@ -29,9 +29,11 @@ struct MessageListView: View {
                     }
                 }
                 .padding(.horizontal, 14)
-                .padding(.top, 4)
+                .padding(.top, 12)
                 .padding(.bottom, 8)
             }
+            .contentMargins(.top, 4, for: .scrollContent)
+            .contentMargins(.bottom, 4, for: .scrollContent)
             .onChange(of: messages.count) { _, _ in
                 if let last = messages.last {
                     withAnimation(.easeOut(duration: 0.2)) {

@@ -30,14 +30,12 @@
 		FB58AA1195B0DD3E2079216E /* MessageCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF58AA1195B0DD3E2079216E /* MessageCell.swift */; };
 		FB898D1F911341E0F61D55CC /* ComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF898D1F911341E0F61D55CC /* ComposerView.swift */; };
 		FB3390ED493539E8A2949406 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3390ED493539E8A2949406 /* SettingsView.swift */; };
-		FB0D7D46E51E695C201913DE /* MarkdownWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0D7D46E51E695C201913DE /* MarkdownWebView.swift */; };
-		FBCFD28DBB0D4F3DA0F33D20 /* HeightAwareMarkdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFCFD28DBB0D4F3DA0F33D20 /* HeightAwareMarkdown.swift */; };
-		FB77A059B5B1EE5D02D34AA2 /* WebViewConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF77A059B5B1EE5D02D34AA2 /* WebViewConfig.swift */; };
 		FB2AF2F00CD6260CB46E4419 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2AF2F00CD6260CB46E4419 /* HapticManager.swift */; };
 		FB9133A2D9424B355112C3A2 /* Logger+.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF9133A2D9424B355112C3A2 /* Logger+.swift */; };
-		FB076964D7F9BDA045D07369 /* renderer.html in Resources */ = {isa = PBXBuildFile; fileRef = FF076964D7F9BDA045D07369 /* renderer.html */; };
-		FB57FEC7909050B8697AACAF /* hermes-mobile.css in Resources */ = {isa = PBXBuildFile; fileRef = FF57FEC7909050B8697AACAF /* hermes-mobile.css */; };
-		FB41669FBB28E4F98488F90F /* UPSTREAM.txt in Resources */ = {isa = PBXBuildFile; fileRef = FF41669FBB28E4F98488F90F /* UPSTREAM.txt */; };
+		FB04A1E2A1C1A1A1A1A1A1A1 /* MarkdownText.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF04A1E2A1C1A1A1A1A1A1A2 /* MarkdownText.swift */; };
+		FB04A1E2B2C2B2C2B2C2B2C2 /* MarkdownParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF04A1E2B2C2B2C2B2C2B2C3 /* MarkdownParser.swift */; };
+		FB04A1E2C3C3C3C3C3C3C3C3 /* CodeBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF04A1E2C3C3C3C3C3C3C3C4 /* CodeBlockView.swift */; };
+		FB04A1E2D4D4D4D4D4D4D4D4 /* SyntaxHighlighter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF04A1E2D4D4D4D4D4D4D4D5 /* SyntaxHighlighter.swift */; };
 		FBAA000000000ASSETSBF001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FBAA00000000ASSXCA000000 /* Assets.xcassets */; };
 		FBAA1100000000000000LDEV /* LDSwiftEventSource in Frameworks */ = {isa = PBXBuildFile; productRef = FBAA0A000000000000PKLDE /* LDSwiftEventSource */; };
 		FBAA1100000000000000KYAC /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = FBAA0A000000000000PKKYA /* KeychainAccess */; };
@@ -67,14 +65,12 @@
 		FF58AA1195B0DD3E2079216E /* MessageCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageCell.swift; sourceTree = "<group>"; };
 		FF898D1F911341E0F61D55CC /* ComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerView.swift; sourceTree = "<group>"; };
 		FF3390ED493539E8A2949406 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		FF0D7D46E51E695C201913DE /* MarkdownWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownWebView.swift; sourceTree = "<group>"; };
-		FFCFD28DBB0D4F3DA0F33D20 /* HeightAwareMarkdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeightAwareMarkdown.swift; sourceTree = "<group>"; };
-		FF77A059B5B1EE5D02D34AA2 /* WebViewConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewConfig.swift; sourceTree = "<group>"; };
 		FF2AF2F00CD6260CB46E4419 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
 		FF9133A2D9424B355112C3A2 /* Logger+.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Logger+.swift"; sourceTree = "<group>"; };
-		FF076964D7F9BDA045D07369 /* renderer.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = renderer.html; sourceTree = "<group>"; };
-		FF57FEC7909050B8697AACAF /* hermes-mobile.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = "hermes-mobile.css"; sourceTree = "<group>"; };
-		FF41669FBB28E4F98488F90F /* UPSTREAM.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = UPSTREAM.txt; sourceTree = "<group>"; };
+		FF04A1E2A1C1A1A1A1A1A1A2 /* MarkdownText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownText.swift; sourceTree = "<group>"; };
+		FF04A1E2B2C2B2C2B2C2B2C3 /* MarkdownParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownParser.swift; sourceTree = "<group>"; };
+		FF04A1E2C3C3C3C3C3C3C3C4 /* CodeBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeBlockView.swift; sourceTree = "<group>"; };
+		FF04A1E2D4D4D4D4D4D4D4D5 /* SyntaxHighlighter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntaxHighlighter.swift; sourceTree = "<group>"; };
 		FBAA00000000INFO000000PL /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FBAA00000000ENTL000000PL /* Hermes.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Hermes.entitlements; sourceTree = "<group>"; };
 		FBAA00000000PRODHERMES /* Hermes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Hermes.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -228,22 +224,12 @@
 		FBAA00000000GRPREND000000 /* Rendering */ = {
 			isa = PBXGroup;
 			children = (
-				FF0D7D46E51E695C201913DE /* MarkdownWebView.swift */,
-				FFCFD28DBB0D4F3DA0F33D20 /* HeightAwareMarkdown.swift */,
-				FF77A059B5B1EE5D02D34AA2 /* WebViewConfig.swift */,
-				FBAA00000000GRPRES000000 /* Resources */,
+				FF04A1E2A1C1A1A1A1A1A1A2 /* MarkdownText.swift */,
+				FF04A1E2B2C2B2C2B2C2B2C3 /* MarkdownParser.swift */,
+				FF04A1E2C3C3C3C3C3C3C3C4 /* CodeBlockView.swift */,
+				FF04A1E2D4D4D4D4D4D4D4D5 /* SyntaxHighlighter.swift */,
 			);
 			path = Rendering;
-			sourceTree = "<group>";
-		};
-		FBAA00000000GRPRES000000 /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				FF076964D7F9BDA045D07369 /* renderer.html */,
-				FF57FEC7909050B8697AACAF /* hermes-mobile.css */,
-				FF41669FBB28E4F98488F90F /* UPSTREAM.txt */,
-			);
-			path = Resources;
 			sourceTree = "<group>";
 		};
 		FBAA00000000GRPHAPT000000 /* Haptics */ = {
@@ -335,9 +321,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FB076964D7F9BDA045D07369 /* renderer.html in Resources */,
-				FB57FEC7909050B8697AACAF /* hermes-mobile.css in Resources */,
-				FB41669FBB28E4F98488F90F /* UPSTREAM.txt in Resources */,
 				FBAA000000000ASSETSBF001 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -372,11 +355,12 @@
 				FB58AA1195B0DD3E2079216E /* MessageCell.swift in Sources */,
 				FB898D1F911341E0F61D55CC /* ComposerView.swift in Sources */,
 				FB3390ED493539E8A2949406 /* SettingsView.swift in Sources */,
-				FB0D7D46E51E695C201913DE /* MarkdownWebView.swift in Sources */,
-				FBCFD28DBB0D4F3DA0F33D20 /* HeightAwareMarkdown.swift in Sources */,
-				FB77A059B5B1EE5D02D34AA2 /* WebViewConfig.swift in Sources */,
 				FB2AF2F00CD6260CB46E4419 /* HapticManager.swift in Sources */,
 				FB9133A2D9424B355112C3A2 /* Logger+.swift in Sources */,
+				FB04A1E2A1C1A1A1A1A1A1A1 /* MarkdownText.swift in Sources */,
+				FB04A1E2B2C2B2C2B2C2B2C2 /* MarkdownParser.swift in Sources */,
+				FB04A1E2C3C3C3C3C3C3C3C3 /* CodeBlockView.swift in Sources */,
+				FB04A1E2D4D4D4D4D4D4D4D4 /* SyntaxHighlighter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

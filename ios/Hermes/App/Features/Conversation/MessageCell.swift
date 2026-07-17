@@ -37,10 +37,10 @@ struct MessageCell: View {
                         ToolCallCard(name: pending.name, args: pending.args, preview: pending.preview, isRunning: true)
                     }
                     ForEach(Array(message.toolCalls.enumerated()), id: \.offset) { _, t in
-                        ToolCallCard(name: t.name, args: t.args, preview: t.preview, isRunning: false, isError: t.is_error)
+                        ToolCallCard(name: t.name, args: t.args, preview: t.preview, isRunning: false, isError: t.is_error, duration: t.duration)
                     }
                     if !message.text.isEmpty {
-                        HeightAwareMarkdown(text: message.text, isStreaming: !message.isFinal)
+                        MarkdownText(text: message.text)
                             .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                     if let a = message.approval { ApprovalCard(approval: a) }
@@ -102,28 +102,6 @@ struct MessageCell: View {
             bottomTrailingRadius: 4,
             topTrailingRadius: Self.bubbleCornerRadius
         )
-    }
-
-    @ViewBuilder
-    private var userMenu: some View {
-        Button {
-            UIPasteboard.general.string = message.text
-        } label: {
-            Label("Copy", systemImage: "doc.on.doc")
-        }
-        Button {
-            // Edit-and-resend: caller passes this via a closure in v2.
-            // For now we just copy to clipboard as a placeholder so the
-            // menu works without crashing on dev builds.
-            UIPasteboard.general.string = message.text
-        } label: {
-            Label("Edit", systemImage: "pencil")
-        }
-        Button(role: .destructive) {
-            // Retry hook — wired in v2.
-        } label: {
-            Label("Retry", systemImage: "arrow.clockwise")
-        }
     }
 
     @State private var userMenuShown: Bool = false
@@ -217,22 +195,30 @@ struct ReasoningCard: View {
 // MARK: - PulsingDot
 
 private struct PulsingDot: View {
-    @State private var phase = 0
-
     var body: some View {
-        HStack(spacing: 2) {
-            ForEach(0..<3) { i in
+        HStack(spacing: 3) {
+            ForEach(0..<3, id: \.self) { i in
                 Circle()
                     .fill(Color.secondary)
                     .frame(width: 4, height: 4)
-                    .opacity(phase == i ? 1 : 0.25)
+                    .modifier(Pulse(delay: Double(i) * 0.18))
             }
         }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 0.45).repeatForever(autoreverses: false)) {
-                phase = 2
+    }
+}
+
+private struct Pulse: ViewModifier {
+    let delay: Double
+    @State private var scale: CGFloat = 0.7
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(scale)
+            .opacity(scale < 1.0 ? 0.5 : 1.0)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true).delay(delay)) {
+                    scale = 1.3
+                }
             }
-        }
     }
 }
 
@@ -244,67 +230,127 @@ struct ToolCallCard: View {
     let preview: String?
     let isRunning: Bool
     var isError: Bool? = nil
-    @State private var previewExpanded = false
+    var duration: Double? = nil
+    @State private var expanded: Bool = false
+    @State private var fullyExpanded: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: iconName)
-                    .foregroundStyle(.tint)
-                    .frame(width: 22, height: 22)
-                    .background(Color.accentColor.opacity(0.12), in: .circle)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(name)
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-                    if let p = preview, !p.isEmpty, previewExpanded {
-                        Text(p)
+        VStack(alignment: .leading, spacing: 0) {
+            // Header row — always visible. Mirrors the Hermes Desktop's
+            // collapsed-state (no card fill, no border, just a line of text).
+            Button {
+                guard hasExpandableContent else { return }
+                withAnimation(.snappy(duration: 0.18)) { expanded.toggle() }
+            } label: {
+                HStack(spacing: 6) {
+                    if isRunning {
+                        ProgressView().controlSize(.mini)
+                    } else if isError == true {
+                        Image(systemName: "exclamationmark.octagon.fill")
+                            .foregroundStyle(.red)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                            .transition(.opacity)
+                    } else {
+                        Image(systemName: iconName)
+                            .foregroundStyle(.tint)
+                            .font(.caption)
+                    }
+                    Text(titleText)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 4)
+                    if let d = duration {
+                        Text(String(format: "%.1fs", d))
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.tertiary)
+                    }
+                    if hasExpandableContent {
+                        Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.tertiary)
                     }
                 }
-                Spacer(minLength: 4)
-                if isRunning {
-                    ProgressView().controlSize(.mini)
-                } else if isError == true {
-                    Image(systemName: "exclamationmark.octagon.fill")
-                        .foregroundStyle(.red)
-                } else {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                }
+                .contentShape(.rect)
+                .padding(.horizontal, 2)
             }
-            if let p = preview, !p.isEmpty {
-                Button {
-                    withAnimation(.snappy) { previewExpanded.toggle() }
-                } label: {
-                    Text(previewExpanded ? "Hide preview" : "Show preview")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.tint)
+            .buttonStyle(.plain)
+            .disabled(!hasExpandableContent)
+
+            if expanded, hasExpandableContent {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("OUTPUT")
+                            .font(.system(size: 10, weight: .semibold))
+                            .tracking(0.8)
+                            .foregroundStyle(.tertiary)
+                        Spacer()
+                        Button {
+                            UIPasteboard.general.string = preview ?? args?.preview ?? ""
+                        } label: {
+                            Image(systemName: "doc.on.doc")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.top, 6)
+
+                    ScrollView {
+                        Text(preview ?? args?.preview ?? "")
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                            .lineLimit(fullyExpanded ? nil : 5)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: 100)
+
+                    if let preview = preview, preview.count > 200, !fullyExpanded {
+                        Button {
+                            withAnimation(.snappy) { fullyExpanded = true }
+                        } label: {
+                            Text("Show more")
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(.tint)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 2)
+                    }
                 }
-                .buttonStyle(.plain)
-            }
-            if let a = args, !a.preview.isEmpty {
-                DisclosureGroup("Args") {
-                    Text(a.preview)
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                }
-                .font(.caption)
+                .padding(.leading, 22)
+                .padding(.top, 2)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.secondary.opacity(0.06))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke((isError == true ? Color.red : Color.secondary).opacity(0.22), lineWidth: 0.5)
-                )
-        )
+        .opacity(0.85)
+    }
+
+    private var hasExpandableContent: Bool {
+        let previewNonEmpty = (preview?.isEmpty == false)
+        let argsNonEmpty = (args?.preview.isEmpty == false)
+        return previewNonEmpty || argsNonEmpty
+    }
+
+    private var titleText: String {
+        if isError == true { return "Tool error: \(name)" }
+        if isRunning { return "Running \(humanName)" }
+        return humanName
+    }
+
+    private var humanName: String {
+        let n = name.lowercased()
+        switch n {
+        case "bash", "shell", "command", "execute_code": return "command"
+        case "read_file", "read": return "file"
+        case "edit_file", "write_file": return "edit"
+        case "patch": return "patch"
+        case "search_files", "search", "rg", "grep": return "search"
+        case "web_search", "web_extract": return "web search"
+        case "web", "fetch", "http": return "fetch"
+        case "list_files": return "list files"
+        case "clarify": return "question"
+        case "compress": return "compression"
+        default: return name
+        }
     }
 
     private var iconName: String {
@@ -332,9 +378,13 @@ struct ApprovalCard: View {
                 .padding(8)
                 .background(Color.secondary.opacity(0.1), in: .rect(cornerRadius: 6))
                 .textSelection(.enabled)
+                .lineLimit(3)
+                .truncationMode(.tail)
             Text(approval.description)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .lineLimit(2)
+                .truncationMode(.tail)
             HStack {
                 ForEach(approval.choices, id: \.self) { choice in
                     Button(choice.capitalized) {
@@ -365,7 +415,11 @@ struct TerminalBadge: View {
                 Text("Cancelled").font(.caption).foregroundStyle(.secondary)
             case .error(let m):
                 Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
-                Text(m).font(.caption).foregroundStyle(.red)
+                Text(m)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .lineLimit(2)
+                    .truncationMode(.tail)
             }
         }
         .padding(.top, 2)
