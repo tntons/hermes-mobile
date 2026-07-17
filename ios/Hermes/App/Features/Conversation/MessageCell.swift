@@ -74,11 +74,24 @@ struct MessageCell: View {
                 .padding(.vertical, 10)
                 .padding(.horizontal, 14)
                 .background(Color.accentColor, in: asymmetricBubble)
-                .contextMenu { userMenu }
+                // .contextMenu { userMenu }  ← moved off the bubble background.
+                // Attaching .contextMenu to the bubble's background modifier
+                // made the gesture recognizer's hit area extend across the
+                // full row, which then intercepted taps intended for the nav
+                // bar's back chevron when the message was scrolled near the top.
+                .onLongPressGesture(minimumDuration: 0.5) {
+                    userMenuShown = true
+                }
             Text(message.timestamp, style: .time)
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .padding(.trailing, 4)
+        }
+        .confirmationDialog("Message actions", isPresented: $userMenuShown, titleVisibility: .hidden) {
+            Button("Copy") { UIPasteboard.general.string = message.text }
+            Button("Edit") { UIPasteboard.general.string = message.text }
+            Button("Retry", role: .destructive) { /* wired in v2 */ }
+            Button("Cancel", role: .cancel) {}
         }
     }
 
@@ -112,6 +125,8 @@ struct MessageCell: View {
             Label("Retry", systemImage: "arrow.clockwise")
         }
     }
+
+    @State private var userMenuShown: Bool = false
 
     // MARK: - Avatar
 

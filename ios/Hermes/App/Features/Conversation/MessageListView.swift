@@ -29,7 +29,7 @@ struct MessageListView: View {
                     }
                 }
                 .padding(.horizontal, 14)
-                .padding(.top, 12)
+                .padding(.top, 4)
                 .padding(.bottom, 8)
             }
             .onChange(of: messages.count) { _, _ in

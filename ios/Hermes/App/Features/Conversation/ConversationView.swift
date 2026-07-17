@@ -50,6 +50,8 @@ struct ConversationView: View {
         }
         .navigationTitle(viewModel.titleDraft)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarBackground(.bar, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
