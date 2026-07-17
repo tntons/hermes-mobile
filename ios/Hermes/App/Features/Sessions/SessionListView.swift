@@ -9,7 +9,7 @@ struct SessionListView: View {
     @Environment(AppState.self) private var appState
     @Environment(APIConfig.self) private var apiConfig
     @State private var viewModel = SessionListViewModel()
-    @State private var presentingConversationFor: Session?
+    @State private var presentedSession: Session?
     @State private var showNew: Bool = false
     @State private var renaming: Session?
     @State private var renameDraft: String = ""
@@ -73,7 +73,7 @@ struct SessionListView: View {
                     Button {
                         Task {
                             if let s = await viewModel.newSession() {
-                                presentingConversationFor = s
+                                presentedSession = s
                             }
                         }
                     } label: { Image(systemName: "plus") }
@@ -87,9 +87,13 @@ struct SessionListView: View {
                         .padding()
                 }
             }
-            .navigationDestination(item: $presentingConversationFor) { session in
-                ConversationView(sessionID: session.session_id, title: session.title)
-                    .environment(apiConfig)
+            .navigationDestination(for: Session.self) { session in
+                ConversationView(
+                    sessionID: session.session_id,
+                    title: session.title,
+                    onBack: { presentedSession = nil }
+                )
+                .environment(apiConfig)
             }
             .alert("Rename session",
                    isPresented: Binding(
@@ -134,8 +138,8 @@ struct SessionListView: View {
                 #if DEBUG
                 if ProcessInfo.processInfo.arguments.contains("-openFirstSession"),
                    let first = viewModel.sessions.first,
-                   presentingConversationFor == nil {
-                    presentingConversationFor = first
+                   presentedSession == nil {
+                    presentedSession = first
                 }
                 #endif
             }
@@ -154,7 +158,7 @@ struct SessionListView: View {
         if session.is_streaming == true {
             streamingLockedSession = session
         } else {
-            presentingConversationFor = session
+            presentedSession = session
         }
     }
 }

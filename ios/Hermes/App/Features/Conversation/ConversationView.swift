@@ -8,18 +8,19 @@ import SwiftUI
 struct ConversationView: View {
     @Environment(AppState.self) private var appState
     @Environment(APIConfig.self) private var apiConfig
-    @Environment(\.dismiss) private var dismiss
     @State var sessionID: String
     @State var title: String
+    let onBack: () -> Void
     @State private var viewModel: ConversationViewModel
     @State private var renaming: Bool = false
     @State private var renameDraft: String = ""
     @FocusState private var composerFocused: Bool
 
-    init(sessionID: String, title: String) {
+    init(sessionID: String, title: String, onBack: @escaping () -> Void = {}) {
         _sessionID = State(initialValue: sessionID)
         _title = State(initialValue: title)
         _viewModel = State(initialValue: ConversationViewModel(sessionID: sessionID, title: title))
+        self.onBack = onBack
     }
 
     var body: some View {
@@ -57,7 +58,7 @@ struct ConversationView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button {
-                    dismiss()
+                    onBack()
                 } label: {
                     HStack(spacing: 2) {
                         Image(systemName: "chevron.left")
@@ -67,6 +68,7 @@ struct ConversationView: View {
                     }
                     .foregroundStyle(.tint)
                 }
+                .accessibilityIdentifier("custom-back-button")
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
