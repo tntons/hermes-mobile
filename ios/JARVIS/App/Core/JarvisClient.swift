@@ -172,6 +172,18 @@ public actor JarvisClient {
         try check(response: response, data: Data())
     }
 
+    public func fetchApprovals() async throws -> [ApprovalRecord] {
+        let response: ApprovalListResponse = try await getJSON(.approvals)
+        return response.approvals
+    }
+
+    public func decideApproval(id: String, decision: String) async throws -> ApprovalRecord {
+        try await postJSON(
+            .approvalDecision(id: id),
+            body: ApprovalDecisionRequest(decision: decision)
+        )
+    }
+
     // MARK: - SSE
 
     /// Opens the SSE stream for a `stream_id` and yields parsed `SSEEvent`s.

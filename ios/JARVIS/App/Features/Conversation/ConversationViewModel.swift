@@ -315,6 +315,7 @@ public final class ConversationViewModel {
             messages[idx].pendingTool = nil
         case .approval(let a):
             messages[idx].approval = a
+            messages[idx].approvalStatus = .pending
         case .clarify(let c):
             // v1: render as a pseudo tool-call so the user sees it.
             messages[idx].toolCalls.append(ToolCall(
@@ -334,6 +335,38 @@ public final class ConversationViewModel {
             break
         case .done, .streamEnd, .cancel, .appError:
             break  // handled by terminal caller
+        }
+    }
+
+    public func decideApproval(approvalID: String, decision: String) async {
+        guard let client else { return }
+        guard let index = messages.firstIndex(where: { $0.approval?.approval_id == approvalID }) else {
+            return
+        }
+        do {
+            let result = try await client.decideApproval(id: approvalID, decision: decision)
+            messages[index].approvalStatus = result.status
+            errorMessage = nil
+            HapticManager.play(decision == "approve" ? .success : .soft)
+        } catch {
+            errorMessage = "Approval was not sent: \(error.localizedDescription)"
+            HapticManager.play(.error)
+        }
+    }
+
+    public func refreshPendingApprovals() async {
+        guard let client else { return }
+        do {
+            let approvals = try await client.fetchApprovals()
+            for approval in approvals {
+                guard let index = messages.firstIndex(where: {
+                    $0.approval?.approval_id == approval.approval_id
+                }) else { continue }
+                messages[index].approvalStatus = approval.status
+            }
+        } catch {
+            // Approval refresh is opportunistic; conversation history remains usable.
+            JarvisLog.network.debug("approval refresh failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 

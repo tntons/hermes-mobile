@@ -365,6 +365,42 @@ public struct ChatStartResponse: Codable, Sendable {
     public let error: String?
 }
 
+// MARK: - Secretary approvals
+
+public enum ApprovalStatus: String, Codable, Hashable, Sendable {
+    case pending, approved, denied, expired, consumed
+}
+
+public struct ApprovalRecord: Codable, Identifiable, Sendable {
+    public var id: String { approval_id }
+
+    public let approval_id: String
+    public let session_id: String
+    public let stream_id: String?
+    public let action_class: String
+    public let tool_name: String
+    public let command: String
+    public let description: String
+    public let choices: [String]
+    public let source: String
+    public let status: ApprovalStatus
+    public let created_at: Double
+    public let expires_at: Double
+    public let decided_at: Double?
+}
+
+public struct ApprovalListResponse: Codable, Sendable {
+    public let approvals: [ApprovalRecord]
+}
+
+public struct ApprovalDecisionRequest: Codable, Sendable {
+    public let decision: String
+
+    public init(decision: String) {
+        self.decision = decision
+    }
+}
+
 // MARK: - Request bodies
 
 public struct NewSessionRequest: Codable, Sendable {

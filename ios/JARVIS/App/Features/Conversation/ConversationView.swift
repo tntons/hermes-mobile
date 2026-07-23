@@ -82,7 +82,10 @@ struct ConversationView: View {
                     MessageListView(
                         messages: $viewModel.messages,
                         isStreaming: viewModel.isStreaming,
-                        onRegenerate: { Task { await viewModel.regenerateLastResponse() } }
+                        onRegenerate: { Task { await viewModel.regenerateLastResponse() } },
+                        onApprovalDecision: { approvalID, decision in
+                            Task { await viewModel.decideApproval(approvalID: approvalID, decision: decision) }
+                        }
                     )
                 }
                 ComposerView(
@@ -140,7 +143,10 @@ struct ConversationView: View {
         }
         .onChange(of: appState.scenePhase) { _, newPhase in
             if newPhase == .active {
-                Task { await viewModel.resumeIfNeeded() }
+                Task {
+                    await viewModel.resumeIfNeeded()
+                    await viewModel.refreshPendingApprovals()
+                }
             }
         }
     }

@@ -17,6 +17,7 @@ struct MessageCell: View {
     var isLastInTurn: Bool = false
     var isLatestResponse: Bool = false
     let onRegenerate: () -> Void
+    let onApprovalDecision: (String, String) -> Void
 
     private static let bubbleCornerRadius: CGFloat = 18
 
@@ -60,7 +61,16 @@ struct MessageCell: View {
                             responseActions
                         }
                     }
-                    if let a = message.approval { ApprovalCard(approval: a) }
+                    if let a = message.approval {
+                        ApprovalCard(
+                            approval: a,
+                            status: message.approvalStatus,
+                            onDecision: { decision in
+                                guard let approvalID = a.approval_id else { return }
+                                onApprovalDecision(approvalID, decision)
+                            }
+                        )
+                    }
                     if isLastInTurn, let t = message.terminal, message.isFinal {
                         TerminalBadge(state: t)
                     }
@@ -420,6 +430,9 @@ struct ToolCallCard: View {
 
 struct ApprovalCard: View {
     let approval: SSEEvent.ApprovalEvent
+    let status: ApprovalStatus?
+    let onDecision: (String) -> Void
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: JarvisTheme.Spacing.xs) {
@@ -447,17 +460,19 @@ struct ApprovalCard: View {
                 .foregroundStyle(JarvisTheme.textSecondary)
                 .lineLimit(2)
                 .truncationMode(.tail)
-            Text("Review this command before choosing how JARVIS should proceed.")
+            Text(status == .pending || status == nil
+                 ? "Review this action before choosing how JARVIS should proceed."
+                 : statusLabel)
                 .font(.caption)
-                .foregroundStyle(JarvisTheme.textTertiary)
+                .foregroundStyle(status == .denied ? .red : JarvisTheme.textTertiary)
             HStack {
-                ForEach(approval.choices, id: \.self) { choice in
-                    Button(choice.capitalized) {
-                        // v1: tap is logged but not wired to /api/approval/respond.
-                        // Phase 5 will add a real POST.
-                    }
+                Button("Approve") { onDecision("approve") }
                     .buttonStyle(.bordered)
-                }
+                    .tint(JarvisTheme.accent)
+                    .disabled(!isPending || approval.approval_id == nil)
+                Button("Deny", role: .destructive) { onDecision("deny") }
+                    .buttonStyle(.bordered)
+                    .disabled(!isPending || approval.approval_id == nil)
             }
         }
         .padding(12)
@@ -465,6 +480,20 @@ struct ApprovalCard: View {
         .overlay {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.orange.opacity(0.35), lineWidth: 0.75)
+        }
+    }
+
+    private var isPending: Bool {
+        status == nil || status == .pending
+    }
+
+    private var statusLabel: String {
+        switch status {
+        case .approved: return "Approved for this action."
+        case .consumed: return "Decision sent; JARVIS is continuing."
+        case .denied: return "Denied. JARVIS will not perform this action."
+        case .expired: return "This approval expired. Ask JARVIS to propose it again."
+        case .pending, .none: return "Review this action before choosing how JARVIS should proceed."
         }
     }
 }

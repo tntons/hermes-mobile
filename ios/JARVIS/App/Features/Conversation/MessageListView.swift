@@ -15,6 +15,7 @@ struct MessageListView: View {
     @Binding var messages: [ChatMessage]
     let isStreaming: Bool
     let onRegenerate: () -> Void
+    let onApprovalDecision: (String, String) -> Void
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -26,7 +27,10 @@ struct MessageListView: View {
                             isStreaming: isStreaming && idx == messages.count - 1,
                             isLastInTurn: isLastTurnBoundary(at: idx),
                             isLatestResponse: idx == messages.count - 1,
-                            onRegenerate: onRegenerate
+                            onRegenerate: onRegenerate,
+                            onApprovalDecision: { approvalID, decision in
+                                onApprovalDecision(approvalID, decision)
+                            }
                         )
                         .id(m.id)
                     }

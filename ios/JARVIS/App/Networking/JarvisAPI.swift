@@ -21,6 +21,9 @@ public enum JarvisAPI {
     case chatStreamStatus(streamID: String)
     case chatCancel(streamID: String)
     case registerDevice
+    case approvals
+    case approval(id: String)
+    case approvalDecision(id: String)
 
     public func url(base: URL) -> URL {
         var c = URLComponents()
@@ -63,16 +66,23 @@ public enum JarvisAPI {
             c.queryItems = [URLQueryItem(name: "stream_id", value: sid)]
         case .registerDevice:
             c.path = "/mobile/device"
+        case .approvals:
+            c.path = "/mobile/approvals"
+        case .approval(let id):
+            c.path = "/mobile/approvals/\(id)"
+        case .approvalDecision(let id):
+            c.path = "/mobile/approvals/\(id)/decision"
         }
         return c.url(relativeTo: base)!
     }
 
     public var method: String {
         switch self {
-        case .health, .sessions, .session, .chatStream, .chatStreamStatus, .chatCancel:
+        case .health, .sessions, .session, .chatStream, .chatStreamStatus, .chatCancel,
+             .approvals, .approval:
             return "GET"
         case .newSession, .renameSession, .deleteSession, .pinSession, .archiveSession,
-             .chatStart, .registerDevice:
+             .chatStart, .registerDevice, .approvalDecision:
             return "POST"
         }
     }

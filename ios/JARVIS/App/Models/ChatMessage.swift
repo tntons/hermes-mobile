@@ -15,6 +15,7 @@ public struct ChatMessage: Identifiable, Hashable, Sendable {
     public var toolCalls: [ToolCall]              // native tool-call cards
     public var pendingTool: ToolCall?             // currently in-progress tool
     public var approval: SSEEvent.ApprovalEvent?
+    public var approvalStatus: ApprovalStatus?
     public var terminal: TerminalState?
     public var timestamp: Date
     public var isFinal: Bool
@@ -27,6 +28,7 @@ public struct ChatMessage: Identifiable, Hashable, Sendable {
         toolCalls: [ToolCall] = [],
         pendingTool: ToolCall? = nil,
         approval: SSEEvent.ApprovalEvent? = nil,
+        approvalStatus: ApprovalStatus? = nil,
         terminal: TerminalState? = nil,
         timestamp: Date = .now,
         isFinal: Bool = false
@@ -38,6 +40,7 @@ public struct ChatMessage: Identifiable, Hashable, Sendable {
         self.toolCalls = toolCalls
         self.pendingTool = pendingTool
         self.approval = approval
+        self.approvalStatus = approvalStatus
         self.terminal = terminal
         self.timestamp = timestamp
         self.isFinal = isFinal
