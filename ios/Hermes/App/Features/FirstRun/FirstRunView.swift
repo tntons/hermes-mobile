@@ -61,20 +61,36 @@ struct FirstRunView: View {
                             }
                         }
                         .disabled(viewModel.isTesting || viewModel.gatewayURLString.isEmpty || viewModel.bearerToken.isEmpty)
-
-                        if let r = viewModel.testResult {
+                    }
+                    if let r = viewModel.testResult {
+                        Section {
                             switch r {
                             case .success:
-                                Label("Connection OK", systemImage: "checkmark.circle.fill")
-                                    .foregroundStyle(.green)
-                            case .failure(let s):
-                                Label(s, systemImage: "xmark.octagon.fill")
-                                    .foregroundStyle(.red)
+                                HermesStateBanner(
+                                    title: "Connection ready",
+                                    message: "Hermes reached the gateway successfully.",
+                                    systemImage: "checkmark.circle.fill",
+                                    tone: .success
+                                )
+                            case .failure(let message):
+                                HermesStateBanner(
+                                    title: "Connection failed",
+                                    message: message,
+                                    systemImage: "wifi.exclamationmark",
+                                    tone: .error
+                                )
                             }
                         }
                     }
                     if let msg = viewModel.errorMessage {
-                        Section { Text(msg).foregroundStyle(.red) }
+                        Section {
+                            HermesStateBanner(
+                                title: "Configuration needs attention",
+                                message: msg,
+                                systemImage: "exclamationmark.triangle",
+                                tone: .error
+                            )
+                        }
                     }
                     Section {
                         Text("Your access token is stored securely on this device. Paste your public connection URL and access token to connect Hermes.")

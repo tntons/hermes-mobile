@@ -16,6 +16,8 @@ public final class ConversationViewModel {
     public var messages: [ChatMessage] = []
     public var composerText: String = ""
     public var isStreaming: Bool = false
+    public var isLoadingHistory: Bool = false
+    public var historyErrorMessage: String?
     public var errorMessage: String?
     public var titleDraft: String = ""
 
@@ -42,6 +44,7 @@ public final class ConversationViewModel {
         if config.isMock {
             isMock = true
             messages = MockData.messages(for: sessionID)
+            isLoadingHistory = false
             return
         }
         guard config.isConfigured,
@@ -72,7 +75,14 @@ public final class ConversationViewModel {
 
     public func refreshHistory() async {
         if isMock { return }
-        guard let client = client else { return }
+        guard let client = client else {
+            isLoadingHistory = false
+            return
+        }
+        if messages.isEmpty {
+            isLoadingHistory = true
+        }
+        defer { isLoadingHistory = false }
         do {
             let detail = try await client.fetchSessionDetail(id: sessionID)
             // Replace messages where their content differs from cache, preserving
@@ -99,8 +109,10 @@ public final class ConversationViewModel {
             HermesDAO.upsertMessages(sessionID: sessionID, messages: detail.messages)
             title = detail.session.title
             titleDraft = detail.session.title
+            historyErrorMessage = nil
         } catch {
-            // Don't clear — keep the cache.
+            // Don't clear — keep the cache and make the refresh failure visible.
+            historyErrorMessage = error.localizedDescription
             HermesLog.sse.debug("history refresh failed: \(error.localizedDescription, privacy: .public)")
         }
     }

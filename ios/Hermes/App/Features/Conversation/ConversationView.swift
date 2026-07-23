@@ -29,11 +29,62 @@ struct ConversationView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                MessageListView(
-                    messages: $viewModel.messages,
-                    isStreaming: viewModel.isStreaming,
-                    onRegenerate: { Task { await viewModel.regenerateLastResponse() } }
-                )
+                if let error = viewModel.errorMessage {
+                    HermesStateBanner(
+                        title: "Message not sent",
+                        message: error,
+                        systemImage: "exclamationmark.triangle",
+                        tone: .error,
+                        actionTitle: "Dismiss",
+                        action: { viewModel.errorMessage = nil }
+                    )
+                    .padding(.horizontal, HermesTheme.Spacing.sm)
+                    .padding(.top, HermesTheme.Spacing.xs)
+                }
+
+                if appState.reachability == .offline {
+                    HermesStateBanner(
+                        title: "Offline mode",
+                        message: "Saved messages remain available. Sending is paused until the connection returns.",
+                        systemImage: "wifi.slash",
+                        tone: .warning,
+                        actionTitle: "Retry history",
+                        action: { Task { await viewModel.refreshHistory() } }
+                    )
+                    .padding(.horizontal, HermesTheme.Spacing.sm)
+                    .padding(.top, HermesTheme.Spacing.xs)
+                } else if viewModel.historyErrorMessage != nil {
+                    HermesStateBanner(
+                        title: "Couldn't refresh conversation",
+                        message: "\(viewModel.historyErrorMessage ?? "History is temporarily unavailable.") Showing saved messages instead.",
+                        systemImage: "arrow.triangle.2.circlepath",
+                        tone: .error,
+                        actionTitle: "Try again",
+                        action: { Task { await viewModel.refreshHistory() } }
+                    )
+                    .padding(.horizontal, HermesTheme.Spacing.sm)
+                    .padding(.top, HermesTheme.Spacing.xs)
+                }
+
+                if viewModel.isLoadingHistory && viewModel.messages.isEmpty {
+                    HermesConversationSkeleton()
+                        .padding(.horizontal, HermesTheme.Spacing.lg)
+                } else if viewModel.messages.isEmpty {
+                    HermesEmptyState(
+                        systemImage: "sparkles",
+                        title: "Start the conversation",
+                        message: "Ask Hermes to explain, plan, debug, or build something for you."
+                    )
+                    .padding(.horizontal, HermesTheme.Spacing.lg)
+                    .padding(.vertical, HermesTheme.Spacing.xl)
+                    .frame(maxHeight: .infinity)
+                } else {
+                    MessageListView(
+                        messages: $viewModel.messages,
+                        isStreaming: viewModel.isStreaming,
+                        onRegenerate: { Task { await viewModel.regenerateLastResponse() } }
+                    )
+                }
                 ComposerView(
                     text: $viewModel.composerText,
                     isStreaming: viewModel.isStreaming,
@@ -41,25 +92,6 @@ struct ConversationView: View {
                     onCancel: { Task { await viewModel.cancelStream() } },
                     onAttachment: { showAttachmentNotice = true }
                 )
-            }
-            if let msg = viewModel.errorMessage {
-                VStack {
-                    HStack {
-                        Label(msg, systemImage: "exclamationmark.triangle")
-                            .padding(8)
-                            .background(HermesTheme.surface, in: .rect(cornerRadius: HermesTheme.Radius.small))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: HermesTheme.Radius.small)
-                                    .stroke(HermesTheme.border, lineWidth: 0.5)
-                            }
-                        Spacer()
-                        Button("Dismiss") { viewModel.errorMessage = nil }
-                            .padding(8)
-                    }
-                    .padding(.horizontal)
-                    Spacer()
-                }
-                .padding(.top, 8)
             }
         }
         .background(HermesTheme.background.ignoresSafeArea())

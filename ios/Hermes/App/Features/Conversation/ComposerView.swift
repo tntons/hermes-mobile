@@ -33,6 +33,8 @@ struct ComposerView: View {
                     .padding(.vertical, 8)
                     .foregroundStyle(HermesTheme.textPrimary)
                     .tint(HermesTheme.accent)
+                    .accessibilityValue(text.isEmpty ? "Empty" : text)
+                    .accessibilityHint(text.isEmpty ? "Enter a message to enable Send." : "Ready to send.")
                 Spacer(minLength: 0)
                 actionButton
             }

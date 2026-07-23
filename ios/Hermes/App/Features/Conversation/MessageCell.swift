@@ -31,6 +31,16 @@ struct MessageCell: View {
             HStack(alignment: .top, spacing: 10) {
                 avatar(symbol: "sparkles", tint: HermesTheme.accent, fill: true)
                 VStack(alignment: .leading, spacing: 10) {
+                    if isStreaming,
+                       message.text.isEmpty,
+                       message.reasoning.isEmpty,
+                       message.pendingTool == nil,
+                       message.toolCalls.isEmpty {
+                        HermesActivityIndicator(
+                            label: "Hermes is thinking…",
+                            detail: "Preparing a response"
+                        )
+                    }
                     if !message.reasoning.isEmpty {
                         ReasoningCard(text: message.reasoning, isStreaming: isStreaming && message.text.isEmpty)
                     }
@@ -43,6 +53,9 @@ struct MessageCell: View {
                     if !message.text.isEmpty {
                         MarkdownText(text: message.text)
                             .transition(.opacity.combined(with: .move(edge: .top)))
+                        if isStreaming {
+                            HermesActivityIndicator(label: "Generating response…", systemImage: "text.bubble")
+                        }
                         if isLastInTurn, message.isFinal {
                             responseActions
                         }
@@ -278,7 +291,7 @@ struct ToolCallCard: View {
             } label: {
                 HStack(spacing: 6) {
                     if isRunning {
-                        ProgressView().controlSize(.mini)
+                        HermesBouncingProgressLabel()
                     } else if isError == true {
                         Image(systemName: "exclamationmark.octagon.fill")
                             .foregroundStyle(.red)
@@ -290,7 +303,7 @@ struct ToolCallCard: View {
                     }
                     Text(titleText)
                         .font(.caption.weight(.medium))
-                        .foregroundStyle(HermesTheme.textSecondary)
+                        .foregroundStyle(isRunning ? HermesTheme.accent : HermesTheme.textSecondary)
                     Spacer(minLength: 4)
                     if let d = duration {
                         Text(String(format: "%.1fs", d))
@@ -370,7 +383,7 @@ struct ToolCallCard: View {
 
     private var titleText: String {
         if isError == true { return "Tool error: \(name)" }
-        if isRunning { return "Running \(humanName)" }
+        if isRunning { return "Working · \(humanName)" }
         return humanName
     }
 
@@ -409,8 +422,18 @@ struct ApprovalCard: View {
     let approval: SSEEvent.ApprovalEvent
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Hermes asks for approval", systemImage: "shield.lefthalf.filled")
-                .font(.subheadline.weight(.semibold))
+            HStack(spacing: HermesTheme.Spacing.xs) {
+                Image(systemName: "hand.raised.fill")
+                    .foregroundStyle(.orange)
+                Text("Approval required")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(HermesTheme.textPrimary)
+                Spacer()
+                Text("ACTION")
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(0.8)
+                    .foregroundStyle(.orange)
+            }
             Text(approval.command)
                 .font(.callout.monospaced())
                 .padding(8)
@@ -424,6 +447,9 @@ struct ApprovalCard: View {
                 .foregroundStyle(HermesTheme.textSecondary)
                 .lineLimit(2)
                 .truncationMode(.tail)
+            Text("Review this command before choosing how Hermes should proceed.")
+                .font(.caption)
+                .foregroundStyle(HermesTheme.textTertiary)
             HStack {
                 ForEach(approval.choices, id: \.self) { choice in
                     Button(choice.capitalized) {
@@ -438,7 +464,7 @@ struct ApprovalCard: View {
         .background(HermesTheme.surface, in: .rect(cornerRadius: 12))
         .overlay {
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.yellow.opacity(0.22), lineWidth: 0.5)
+                .stroke(Color.orange.opacity(0.35), lineWidth: 0.75)
         }
     }
 }

@@ -32,6 +32,7 @@
 		FB3390ED493539E8A2949406 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3390ED493539E8A2949406 /* SettingsView.swift */; };
 		FB2AF2F00CD6260CB46E4419 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2AF2F00CD6260CB46E4419 /* HapticManager.swift */; };
 		FB9133A2D9424B355112C3A2 /* Logger+.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF9133A2D9424B355112C3A2 /* Logger+.swift */; };
+		FB7A7EAA6B8D4A329D3E7F11 /* HermesStateViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF7A7EAA6B8D4A329D3E7F12 /* HermesStateViews.swift */; };
 		FB04A1E2A1C1A1A1A1A1A1A1 /* MarkdownText.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF04A1E2A1C1A1A1A1A1A1A2 /* MarkdownText.swift */; };
 		FB04A1E2B2C2B2C2B2C2B2C2 /* MarkdownParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF04A1E2B2C2B2C2B2C2B2C3 /* MarkdownParser.swift */; };
 		FB04A1E2C3C3C3C3C3C3C3C3 /* CodeBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF04A1E2C3C3C3C3C3C3C3C4 /* CodeBlockView.swift */; };
@@ -67,6 +68,7 @@
 		FF3390ED493539E8A2949406 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		FF2AF2F00CD6260CB46E4419 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
 		FF9133A2D9424B355112C3A2 /* Logger+.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Logger+.swift"; sourceTree = "<group>"; };
+		FF7A7EAA6B8D4A329D3E7F12 /* HermesStateViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HermesStateViews.swift; sourceTree = "<group>"; };
 		FF04A1E2A1C1A1A1A1A1A1A2 /* MarkdownText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownText.swift; sourceTree = "<group>"; };
 		FF04A1E2B2C2B2C2B2C2B2C3 /* MarkdownParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownParser.swift; sourceTree = "<group>"; };
 		FF04A1E2C3C3C3C3C3C3C3C4 /* CodeBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeBlockView.swift; sourceTree = "<group>"; };
@@ -175,6 +177,7 @@
 		FBAA00000000GRPFEAT000000 /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				FF7A7EAA6B8D4A329D3E7F12 /* HermesStateViews.swift */,
 				FBAA00000000GRPFRUN000000 /* FirstRun */,
 				FBAA00000000GRPSESS000000 /* Sessions */,
 				FBAA00000000GRPCONV000000 /* Conversation */,
@@ -357,6 +360,7 @@
 				FB3390ED493539E8A2949406 /* SettingsView.swift in Sources */,
 				FB2AF2F00CD6260CB46E4419 /* HapticManager.swift in Sources */,
 				FB9133A2D9424B355112C3A2 /* Logger+.swift in Sources */,
+				FB7A7EAA6B8D4A329D3E7F11 /* HermesStateViews.swift in Sources */,
 				FB04A1E2A1C1A1A1A1A1A1A1 /* MarkdownText.swift in Sources */,
 				FB04A1E2B2C2B2C2B2C2B2C2 /* MarkdownParser.swift in Sources */,
 				FB04A1E2C3C3C3C3C3C3C3C3 /* CodeBlockView.swift in Sources */,

@@ -34,13 +34,27 @@ struct HomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     hero
+                    if appState.reachability == .offline || viewModel.errorMessage != nil {
+                        homeStatus
+                            .padding(.bottom, HermesTheme.Spacing.md)
+                    }
                     promptSuggestions
                     homeComposer
 
                     if viewModel.isLoading && viewModel.sessions.isEmpty {
-                        ProgressView()
-                            .frame(maxWidth: .infinity)
+                        HermesHistorySkeleton()
                             .padding(.top, HermesTheme.Spacing.xl)
+                    } else if viewModel.sessions.isEmpty {
+                        HermesEmptyState(
+                            systemImage: viewModel.errorMessage == nil ? "bubble.left.and.bubble.right" : "wifi.exclamationmark",
+                            title: viewModel.errorMessage == nil ? "No conversations yet" : "We couldn't load conversations",
+                            message: viewModel.errorMessage == nil
+                                ? "Start with the composer above and your recent work will appear here."
+                                : "Check your connection, then try loading your conversations again.",
+                            actionTitle: viewModel.errorMessage == nil ? nil : "Try again",
+                            action: viewModel.errorMessage == nil ? nil : { Task { await viewModel.refresh() } }
+                        )
+                        .padding(.top, HermesTheme.Spacing.xl)
                     } else if !viewModel.recentSessions.isEmpty {
                         recentConversations
                     }
@@ -72,19 +86,6 @@ struct HomeView: View {
                         Image(systemName: "clock.arrow.circlepath")
                     }
                     .accessibilityLabel("All conversations")
-                }
-            }
-            .overlay(alignment: .bottom) {
-                if let msg = viewModel.errorMessage {
-                    Label(msg, systemImage: "exclamationmark.triangle")
-                        .font(HermesTheme.Typography.metadata)
-                        .padding()
-                        .background(HermesTheme.surface, in: .rect(cornerRadius: HermesTheme.Radius.small))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: HermesTheme.Radius.small)
-                                .stroke(HermesTheme.border, lineWidth: 0.5)
-                        }
-                    .padding()
                 }
             }
             .alert("Attachments", isPresented: $showAttachmentNotice) {
@@ -133,6 +134,31 @@ struct HomeView: View {
                 }
                 #endif
             }
+        }
+    }
+
+    @ViewBuilder
+    private var homeStatus: some View {
+        if appState.reachability == .offline {
+            HermesStateBanner(
+                title: "Offline mode",
+                message: viewModel.sessions.isEmpty
+                    ? "Hermes cannot reach the gateway right now."
+                    : "Showing your saved conversations until the connection returns.",
+                systemImage: "wifi.slash",
+                tone: .warning,
+                actionTitle: "Retry",
+                action: { Task { await viewModel.refresh() } }
+            )
+        } else if let message = viewModel.errorMessage {
+            HermesStateBanner(
+                title: "Connection problem",
+                message: message,
+                systemImage: "exclamationmark.triangle",
+                tone: .error,
+                actionTitle: "Try again",
+                action: { Task { await viewModel.refresh() } }
+            )
         }
     }
 
@@ -255,6 +281,7 @@ struct HomeView: View {
 }
 
 struct SessionHistoryView: View {
+    @Environment(AppState.self) private var appState
     @Environment(APIConfig.self) private var apiConfig
     @Environment(\.dismiss) private var dismiss
     @Bindable private var viewModel: SessionListViewModel
@@ -270,12 +297,21 @@ struct SessionHistoryView: View {
     var body: some View {
         NavigationStack(path: $path) {
             Group {
-                if viewModel.sessions.isEmpty && !viewModel.isLoading {
-                    ContentUnavailableView(
-                        "No conversations yet",
-                        systemImage: "bubble.left.and.bubble.right",
-                        description: Text("Start a new conversation from the Hermes home screen.")
+                if viewModel.isLoading && viewModel.sessions.isEmpty {
+                    HermesHistorySkeleton()
+                        .padding(.horizontal, HermesTheme.Spacing.md)
+                } else if viewModel.sessions.isEmpty {
+                    HermesEmptyState(
+                        systemImage: viewModel.errorMessage == nil ? "bubble.left.and.bubble.right" : "wifi.exclamationmark",
+                        title: viewModel.errorMessage == nil ? "No conversations yet" : "History is unavailable",
+                        message: viewModel.errorMessage == nil
+                            ? "Start a new conversation from the Hermes home screen."
+                            : "We couldn't load your conversation history. Check your connection and try again.",
+                        actionTitle: viewModel.errorMessage == nil ? nil : "Try again",
+                        action: viewModel.errorMessage == nil ? nil : { Task { await viewModel.refresh() } }
                     )
+                    .padding(.horizontal, HermesTheme.Spacing.md)
+                    .padding(.top, HermesTheme.Spacing.xl)
                 } else {
                     List {
                         ForEach(viewModel.grouped) { group in
@@ -336,13 +372,31 @@ struct SessionHistoryView: View {
                     Button("Done") { dismiss() }
                 }
             }
-            .overlay(alignment: .bottom) {
-                if let msg = viewModel.errorMessage {
-                    Label(msg, systemImage: "exclamationmark.triangle")
-                        .font(HermesTheme.Typography.metadata)
-                        .padding()
-                        .background(HermesTheme.surface, in: .rect(cornerRadius: HermesTheme.Radius.small))
-                        .padding()
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if appState.reachability == .offline {
+                    HermesStateBanner(
+                        title: "Offline mode",
+                        message: "Showing saved history until the connection returns.",
+                        systemImage: "wifi.slash",
+                        tone: .warning,
+                        actionTitle: "Retry",
+                        action: { Task { await viewModel.refresh() } }
+                    )
+                    .padding(.horizontal, HermesTheme.Spacing.md)
+                    .padding(.top, HermesTheme.Spacing.xs)
+                    .padding(.bottom, HermesTheme.Spacing.sm)
+                } else if let message = viewModel.errorMessage {
+                    HermesStateBanner(
+                        title: "Couldn't update history",
+                        message: message,
+                        systemImage: "exclamationmark.triangle",
+                        tone: .error,
+                        actionTitle: "Try again",
+                        action: { Task { await viewModel.refresh() } }
+                    )
+                    .padding(.horizontal, HermesTheme.Spacing.md)
+                    .padding(.top, HermesTheme.Spacing.xs)
+                    .padding(.bottom, HermesTheme.Spacing.sm)
                 }
             }
             .navigationDestination(for: ConversationRoute.self) { route in
