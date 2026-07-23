@@ -2,8 +2,9 @@
 
 ## Current state
 
-The repository is being migrated from the Hermes-branded mobile product to
-JARVIS. The active implementation branch is `codex/jarvis-migration`.
+The repository has been migrated from the Hermes-branded mobile product to
+JARVIS. The JARVIS implementation is now on `main`; it was built on
+`codex/jarvis-migration` before the fast-forward merge.
 `legacy/hermes-baseline` is pinned to the original `main` commit
 `5be05e97ee6dc58bbdedfdff3ee35102028fe61a` and is the rollback baseline.
 

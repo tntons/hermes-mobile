@@ -1,6 +1,6 @@
 # Current state
 
-The JARVIS Phase 0/1 migration is implemented on `codex/jarvis-migration`.
+The JARVIS Phase 0/1 migration is implemented on `main`.
 The original Hermes implementation is preserved on `legacy/hermes-baseline`.
 
 ## Verified
