@@ -31,6 +31,10 @@ and product metadata. Hermes Agent remains upstream and is not forked.
   consume that field directly.
 - Backend regression suite expanded to 12 tests, including re-authentication
   and SSE resume/run-state coverage.
+- Phase 2 secretary slice adds a strict action policy, durable one-action
+  approvals, upstream approval forwarding, and an in-memory task contract.
+- Mobile approval cards now call `/mobile/approvals/{id}/decision` and refresh
+  approval state when a conversation returns to the foreground.
 - Ruff lint and format checks pass.
 - iOS project, target, scheme, source paths, and application-facing Swift types
   are renamed to JARVIS/Jarvis.
@@ -51,23 +55,29 @@ and product metadata. Hermes Agent remains upstream and is not forked.
 
 Passed:
 
-- `backend/uv run pytest -q` — 12 passed.
+- `backend/uv run pytest -q` — 32 passed.
 - `backend/uv run ruff check .` — passed.
 - `backend/uv run ruff format --check .` — passed.
 - `backend/python3 -m py_compile jarvis_bridge/*.py tests/*.py` — passed.
 - `legacy/hermes-baseline` Hermes simulator build with signing disabled — passed.
 - `ios/xcodebuild -resolvePackageDependencies -project JARVIS.xcodeproj -scheme JARVIS` — passed.
 - `ios/actool` compilation of the JARVIS asset catalog — passed.
-- Fresh derived-data simulator build of the JARVIS target with signing disabled
-  and Swift warnings treated as errors — passed.
+- Fresh derived-data simulator build of the JARVIS target with signing
+  disabled — passed.
+- JARVIS simulator build after the Phase 2 approval changes with signing
+  disabled — passed.
+- `JARVISTests/JARVISApprovalTests` simulator run — 2 passed.
 - Compose config validates the private agent/bridge boundary and the
   non-destructive profile seeder — passed.
 
 The physical-device build still requires a developer team configured locally.
-There is no iOS unit-test target yet; the existing scheme has an empty test
-action, so simulator compile and runtime smoke checks are the current iOS gate.
+The `JARVISTests` unit-test target covers approval request encoding and route
+construction; its simulator run passes both tests.
 The real Hermes host and named Cloudflare Tunnel still need operator
 credentials for end-to-end phone smoke testing.
+The exact upstream approval-response wire payload still needs validation
+against the real Hermes runtime; the bridge currently forwards `approval_id`,
+one-action `choice`, and `run_id`.
 
 ## Important compatibility rules
 

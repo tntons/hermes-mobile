@@ -16,13 +16,16 @@ Hermes Agent Gateway/WebUI runtime
 The computer is used for development and deployment only. The runtime belongs
 on the server hosting the agent, bridge, and tunnel.
 
-## Current Phase 1 stack
+## Current Phase 2 stack
 
 - SwiftUI iOS 17 app in `ios/JARVIS/`.
 - FastAPI bridge in `backend/jarvis_bridge/`.
 - Upstream-compatible Hermes Agent/WebUI container named `jarvis-agent`.
 - Bearer authentication from the phone to `jarvis-bridge`.
 - SQLite run registry for SSE resume and terminal state.
+- Durable one-action approval registry sharing the bridge SQLite volume.
+- Hybrid approval flow: JARVIS mobile routes plus upstream Hermes approval forwarding.
+- Deterministic secretary policy and in-memory task contract for tests.
 - Optional named Cloudflare Tunnel service named `jarvis-cloudflared`.
 - Non-destructive first-run seeding for the default upstream JARVIS persona.
 - Default upstream profile and personality: `jarvis`.
@@ -47,3 +50,7 @@ cd ../ios && xcodebuild -project JARVIS.xcodeproj -scheme JARVIS \
 
 Do not delete the legacy WebUI bridge until the later API-server replacement
 passes its complete migration suite.
+
+Phase 2 deliberately stops before connecting personal Gmail or Google Calendar
+accounts. Approval-gated connectors, durable tasks, scheduling, and production
+notifications remain later workflow phases.

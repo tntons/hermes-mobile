@@ -6,10 +6,10 @@ JARVIS is the user-facing iPhone secretary product. Hermes Agent remains the
 upstream engine and keeps its existing provider integrations, memory, skills,
 tool loop, WebUI/API contract, and environment variables.
 
-This runbook covers Phase 0 (protect and stabilize) and Phase 1 (JARVIS
-product rebrand). Email, calendar, tasks, reminders, scheduled jobs, and
-production notifications are later workflow phases; this migration only
-prepares their ownership boundary.
+This runbook covers Phase 0 (protect and stabilize), Phase 1 (JARVIS product
+rebrand), and the Phase 2 secretary approval slice. Live email/calendar
+connectors, durable tasks, reminders, scheduled jobs, and production
+notifications remain later workflow phases.
 
 Do not:
 
@@ -280,6 +280,84 @@ Static compatibility audit:
 - only the bridge publishes a host port;
 - the profile template parses and the seeder is non-destructive.
 
+## Phase 2 — secretary behavior and approval slice
+
+### 2.1 Behavior contract
+
+The tracked JARVIS profile is the model-facing behavior contract. It must:
+
+- distinguish confirmed facts, recommendations, drafts, proposed actions, and
+  completed actions;
+- remember preferences only when explicitly asked;
+- state the timezone/location used for time-sensitive requests;
+- never claim an action succeeded without a confirmed tool result;
+- require one explicit approval for every configured external side effect.
+
+The default policy allows email/calendar reads, email summaries and drafts,
+configured workspace reads, and personal task creation. It requires approval
+for sending or mutating email, calendar mutations, task completion/deletion,
+dangerous terminal commands, and unknown side effects.
+
+### 2.2 Bridge-owned approval state
+
+Add a durable `approval_requests` table to the existing runs SQLite database.
+Records contain the session/stream, action class, redacted command/description,
+source, expiry, and one of `pending`, `approved`, `denied`, `expired`, or
+`consumed`.
+
+Expose authenticated mobile routes:
+
+- `GET /mobile/approvals`;
+- `GET /mobile/approvals/{approval_id}`;
+- `POST /mobile/approvals/{approval_id}/decision` with `approve` or `deny`.
+
+Approvals expire after 900 seconds and are one-action only. The bridge records
+upstream `approval` SSE events, forwards `once` or `deny` to the upstream
+`/api/approval/respond` route, and fails closed for unknown JARVIS-owned
+side-effect actions. The exact upstream payload must be validated against the
+real Hermes runtime before personal connectors are enabled.
+
+### 2.3 Task contract and mobile flow
+
+Define a `TaskStore` protocol and in-memory adapter for test scenarios. Task
+creation is allowed; task completion/deletion remains approval-required. Use a
+task due date as the reminder representation until durable storage and
+scheduling are implemented.
+
+The iOS client exposes approval list/detail/decision routes, renders the exact
+action in the existing approval card, disables controls after a decision, and
+refreshes approval state when a conversation returns to the foreground. Ordinary
+chat text never counts as approval.
+
+### 2.4 Phase 2 acceptance gates
+
+Backend:
+
+```bash
+cd backend
+uv run pytest -q
+uv run ruff check .
+uv run ruff format --check .
+python3 -m py_compile jarvis_bridge/*.py tests/*.py
+```
+
+The tests must cover the policy matrix, action classification, task creation,
+approval expiry/replay, SSE approval registration, and upstream decision
+forwarding. No live personal account or secret is required.
+
+iOS:
+
+```bash
+cd ios
+xcodebuild -project JARVIS.xcodeproj -scheme JARVIS \
+  -destination 'platform=iOS Simulator,name=iPhone 16' \
+  CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+```
+
+The JARVIS target must compile with warnings treated as errors for the app
+target, and the approval card must provide only one-action approve/deny
+controls.
+
 ## Merge and release-point procedure
 
 After all Phase 0/1 gates pass:
@@ -298,7 +376,7 @@ APNs production, Cloudflare DNS, and device smoke tests.
 ## Explicitly deferred
 
 - Gmail and Google Calendar connectors;
-- JARVIS task/reminder data model and scheduled jobs;
+- durable JARVIS task/reminder storage and scheduled jobs;
 - production APNs implementation;
 - API-server replacement for the WebUI bridge;
 - final bundle identifier and Keychain namespace migration;
