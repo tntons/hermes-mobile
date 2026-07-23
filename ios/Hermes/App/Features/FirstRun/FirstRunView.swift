@@ -82,6 +82,8 @@ struct FirstRunView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                .scrollContentBackground(.hidden)
+                .background(HermesTheme.background)
 
                 Button {
                     Task {
@@ -102,9 +104,13 @@ struct FirstRunView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 12)
                 .padding(.top, 8)
-                .background(.bar)
+                .background(HermesTheme.background)
             }
             .navigationTitle("Welcome")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(HermesTheme.background, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
         }
     }
 }

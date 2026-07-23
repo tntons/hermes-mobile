@@ -21,6 +21,8 @@ public final class ConversationViewModel {
 
     private var client: HermesClient?
     private var isMock = false
+    private var pendingInitialMessage: String?
+    private var initialMessageSubmitted = false
     private var streamTask: Task<Void, Never>?
     private var tokenFlushTask: Task<Void, Never>?
     private var pendingTokens: String = ""
@@ -29,10 +31,11 @@ public final class ConversationViewModel {
     private var currentStreamID: String?
     private var lastEventID: String?
 
-    public init(sessionID: String, title: String) {
+    public init(sessionID: String, title: String, initialMessage: String? = nil) {
         self.sessionID = sessionID
         self.title = title
         self.titleDraft = title
+        self.pendingInitialMessage = initialMessage
     }
 
     public func bootstrap(config: APIConfig) async {
@@ -103,6 +106,20 @@ public final class ConversationViewModel {
     }
 
     // MARK: - Sending
+
+    public func sendInitialMessageIfNeeded() async {
+        guard !initialMessageSubmitted,
+              let initialMessage = pendingInitialMessage,
+              !initialMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !isStreaming,
+              isMock || client != nil
+        else { return }
+
+        initialMessageSubmitted = true
+        pendingInitialMessage = nil
+        composerText = initialMessage
+        await send()
+    }
 
     public func send() async {
         if isMock {

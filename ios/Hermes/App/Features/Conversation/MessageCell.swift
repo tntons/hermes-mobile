@@ -7,7 +7,7 @@ import SwiftUI
 
 /// One row in the conversation. Lays out per role:
 ///   .user     — solid bubble, trailing-anchored, with copy / edit / retry.
-///   .assistant — leading avatar + transparent text, animated reasoning
+///   .assistant — leading Hermes mark + transparent text, animated reasoning
 ///                 (Thought for Ns), tool cards, terminal badge (only on
 ///                 the last message of a turn).
 ///   .system / .tool — centered, captioned, gray.
@@ -24,7 +24,6 @@ struct MessageCell: View {
             HStack(alignment: .bottom, spacing: 8) {
                 Spacer(minLength: 48)
                 userBubble
-                avatar(symbol: "person.fill", tint: .secondary, fill: false)
             }
         case .assistant:
             HStack(alignment: .top, spacing: 10) {
@@ -125,7 +124,7 @@ struct MessageCell: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(tint)
         }
-        .frame(width: 28, height: 28)
+        .frame(width: 24, height: 24)
     }
 }
 
@@ -175,14 +174,7 @@ struct ReasoningCard: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(HermesTheme.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(HermesTheme.border, lineWidth: 0.5)
-                )
-        )
+        .background(Color.clear)
     }
 
     private var estimatedSeconds: Int {

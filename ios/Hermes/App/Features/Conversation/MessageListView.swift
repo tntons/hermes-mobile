@@ -18,7 +18,7 @@ struct MessageListView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical) {
-                LazyVStack(spacing: 14) {
+                LazyVStack(spacing: HermesTheme.Spacing.lg) {
                     ForEach(Array(messages.enumerated()), id: \.element.id) { idx, m in
                         MessageCell(
                             message: m,
@@ -28,8 +28,8 @@ struct MessageListView: View {
                         .id(m.id)
                     }
                 }
-                .padding(.horizontal, 14)
-                .padding(.top, 12)
+                .padding(.horizontal, HermesTheme.Spacing.lg)
+                .padding(.top, HermesTheme.Spacing.sm)
                 .padding(.bottom, 8)
             }
             .background(HermesTheme.background)

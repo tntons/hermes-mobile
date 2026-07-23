@@ -6,16 +6,44 @@
 import SwiftUI
 
 enum HermesTheme {
+    // Hermes keeps its own green accent, but borrows the quiet, neutral
+    // surfaces and low-chrome hierarchy of modern AI chat clients.
     static let background = Color(red: 0.125, green: 0.125, blue: 0.125)
     static let surface = Color(red: 0.180, green: 0.180, blue: 0.180)
-    static let surfaceElevated = Color(red: 0.220, green: 0.220, blue: 0.220)
-    static let userBubble = Color(red: 0.184, green: 0.184, blue: 0.184)
-    static let border = Color.white.opacity(0.12)
+    static let surfaceElevated = Color(red: 0.235, green: 0.235, blue: 0.235)
+    static let userBubble = Color(red: 0.235, green: 0.235, blue: 0.235)
+    static let border = Color.white.opacity(0.10)
+    static let divider = Color.white.opacity(0.075)
     static let textPrimary = Color.white.opacity(0.94)
     static let textSecondary = Color.white.opacity(0.64)
     static let textTertiary = Color.white.opacity(0.42)
     static let accent = Color(red: 0.42, green: 0.82, blue: 0.60)
     static let accentSoft = Color(red: 0.25, green: 0.50, blue: 0.37)
+
+    enum Spacing {
+        static let xxs: CGFloat = 4
+        static let xs: CGFloat = 8
+        static let sm: CGFloat = 12
+        static let md: CGFloat = 16
+        static let lg: CGFloat = 20
+        static let xl: CGFloat = 24
+        static let xxl: CGFloat = 32
+    }
+
+    enum Radius {
+        static let small: CGFloat = 8
+        static let control: CGFloat = 14
+        static let card: CGFloat = 18
+        static let pill: CGFloat = 999
+    }
+
+    enum Typography {
+        static let screenTitle = Font.system(size: 30, weight: .semibold)
+        static let rowTitle = Font.system(size: 16, weight: .medium)
+        static let body = Font.system(size: 16)
+        static let metadata = Font.system(size: 13)
+        static let eyebrow = Font.system(size: 12, weight: .semibold)
+    }
 }
 
 @main
@@ -29,7 +57,7 @@ struct HermesApp: App {
         HermesBackgroundTasks.register()
         #if DEBUG
         // Debug helpers for headless verification of the FirstRunView →
-        // SessionListView → ConversationView flow without manual typing.
+        // HomeView → ConversationView flow without manual typing.
         // Run via:
         //   xcrun simctl launch booted com.hermes.mobile \
         //     -autoConfigureToken <hex> [-openFirstSession]
@@ -77,7 +105,7 @@ struct RootView: View {
             case .unconfigured, .misconfigured:
                 FirstRunView()
             case .configured:
-                SessionListView()
+                HomeView()
             }
         }
         .onChange(of: appState.authState) { _, newValue in

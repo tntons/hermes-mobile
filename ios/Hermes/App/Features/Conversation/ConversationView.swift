@@ -15,10 +15,14 @@ struct ConversationView: View {
     @State private var renameDraft: String = ""
     @FocusState private var composerFocused: Bool
 
-    init(sessionID: String, title: String) {
+    init(sessionID: String, title: String, initialMessage: String? = nil) {
         _sessionID = State(initialValue: sessionID)
         _title = State(initialValue: title)
-        _viewModel = State(initialValue: ConversationViewModel(sessionID: sessionID, title: title))
+        _viewModel = State(initialValue: ConversationViewModel(
+            sessionID: sessionID,
+            title: title,
+            initialMessage: initialMessage
+        ))
     }
 
     var body: some View {
@@ -37,7 +41,11 @@ struct ConversationView: View {
                     HStack {
                         Label(msg, systemImage: "exclamationmark.triangle")
                             .padding(8)
-                            .background(.thinMaterial, in: .rect(cornerRadius: 8))
+                            .background(HermesTheme.surface, in: .rect(cornerRadius: HermesTheme.Radius.small))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: HermesTheme.Radius.small)
+                                    .stroke(HermesTheme.border, lineWidth: 0.5)
+                            }
                         Spacer()
                         Button("Dismiss") { viewModel.errorMessage = nil }
                             .padding(8)
@@ -85,6 +93,7 @@ struct ConversationView: View {
         .task {
             await viewModel.bootstrap(config: apiConfig)
             await viewModel.resumeIfNeeded()
+            await viewModel.sendInitialMessageIfNeeded()
         }
         .onChange(of: appState.scenePhase) { _, newPhase in
             if newPhase == .active {

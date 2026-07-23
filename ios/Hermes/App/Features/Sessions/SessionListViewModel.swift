@@ -160,6 +160,14 @@ public final class SessionListViewModel {
         return HermesListGroup.group(sessions, today: todayStart, yesterday: yesterdayStart)
     }
 
+    public var recentSessions: [Session] {
+        sessions
+            .filter { !$0.archived }
+            .sorted { ($0.last_message_at ?? $0.updated_at) > ($1.last_message_at ?? $1.updated_at) }
+            .prefix(5)
+            .map { $0 }
+    }
+
     private func updateSession(_ sessionID: String, _ update: (inout Session) -> Void) {
         guard let index = sessions.firstIndex(where: { $0.session_id == sessionID }) else { return }
         update(&sessions[index])
@@ -199,6 +207,16 @@ enum MockData {
 
     static func messages(for sessionID: String) -> [ChatMessage] {
         switch sessionID {
+        case "demo-session-1":
+            return [
+                .user("What is Hermes?"),
+                ChatMessage(
+                    role: .assistant,
+                    text: "Hermes is your personal coding assistant. This demo account is running entirely from local sample data.",
+                    terminal: .success,
+                    isFinal: true
+                )
+            ]
         case "demo-session-2":
             return [
                 .user("Help me plan a small weekend project."),
@@ -210,15 +228,7 @@ enum MockData {
                 )
             ]
         default:
-            return [
-                .user("What is Hermes?"),
-                ChatMessage(
-                    role: .assistant,
-                    text: "Hermes is your personal coding assistant. This demo account is running entirely from local sample data.",
-                    terminal: .success,
-                    isFinal: true
-                )
-            ]
+            return []
         }
     }
 }

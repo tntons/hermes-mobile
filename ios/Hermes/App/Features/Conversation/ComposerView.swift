@@ -7,15 +7,15 @@ import SwiftUI
 
 struct ComposerView: View {
     @Binding var text: String
+    var placeholder: String = "Message Hermes…"
     let isStreaming: Bool
     let onSend: () -> Void
     let onCancel: () -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            Divider().overlay(HermesTheme.border)
-            HStack(alignment: .bottom, spacing: 10) {
-                TextField("Message Hermes…", text: $text, axis: .vertical)
+        HStack(alignment: .bottom, spacing: HermesTheme.Spacing.xs) {
+            HStack(alignment: .bottom, spacing: HermesTheme.Spacing.xs) {
+                TextField(placeholder, text: $text, axis: .vertical)
                     .lineLimit(1...8)
                     .font(.system(size: 16))
                     // 16 pt font prevents iOS zoom-on-focus (must not drop below 16 for the field).
@@ -24,36 +24,46 @@ struct ComposerView: View {
                     .padding(.vertical, 8)
                     .foregroundStyle(HermesTheme.textPrimary)
                     .tint(HermesTheme.accent)
-                    .background(HermesTheme.surface, in: .capsule)
-                    .overlay(Capsule().stroke(HermesTheme.border, lineWidth: 0.5))
-                if isStreaming {
-                    Button {
-                        onCancel()
-                    } label: {
-                        Image(systemName: "stop.fill")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(.black)
-                            .frame(width: 32, height: 32)
-                            .background(HermesTheme.textPrimary, in: .circle)
-                    }
-                } else {
-                    Button {
-                        onSend()
-                    } label: {
-                        Image(systemName: "arrow.up")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(canSend ? .black : HermesTheme.textTertiary)
-                            .frame(width: 32, height: 32)
-                            .background(canSend ? HermesTheme.textPrimary : HermesTheme.surfaceElevated, in: .circle)
-                    }
-                    .disabled(!canSend)
-                }
+                Spacer(minLength: 0)
+                actionButton
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .safeAreaPadding(.bottom, 4)
+            .padding(.leading, HermesTheme.Spacing.sm)
+            .padding(.trailing, 6)
+            .padding(.vertical, 6)
+            .background(HermesTheme.surface, in: .rect(cornerRadius: HermesTheme.Radius.card))
+            .overlay {
+                RoundedRectangle(cornerRadius: HermesTheme.Radius.card)
+                    .stroke(HermesTheme.border, lineWidth: 0.5)
+            }
         }
+        .padding(.horizontal, HermesTheme.Spacing.sm)
+        .padding(.top, HermesTheme.Spacing.xs)
+        .safeAreaPadding(.bottom, 4)
         .background(HermesTheme.background)
+    }
+
+    @ViewBuilder
+    private var actionButton: some View {
+        if isStreaming {
+            Button(action: onCancel) {
+                Image(systemName: "stop.fill")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.black)
+                    .frame(width: 34, height: 34)
+                    .background(HermesTheme.textPrimary, in: .circle)
+            }
+            .accessibilityLabel("Stop response")
+        } else {
+            Button(action: onSend) {
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(canSend ? .black : HermesTheme.textTertiary)
+                    .frame(width: 34, height: 34)
+                    .background(canSend ? HermesTheme.textPrimary : HermesTheme.surfaceElevated, in: .circle)
+            }
+            .disabled(!canSend)
+            .accessibilityLabel("Send message")
+        }
     }
 
     private var canSend: Bool {

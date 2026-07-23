@@ -62,7 +62,14 @@ struct SettingsView: View {
                     LabeledContent("Bridge", value: "hermes-mobile-bridge")
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(HermesTheme.background)
             .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(HermesTheme.background, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .tint(HermesTheme.accent)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
