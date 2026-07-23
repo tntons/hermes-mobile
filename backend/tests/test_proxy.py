@@ -28,13 +28,22 @@ def settings(monkeypatch: pytest.MonkeyPatch, tmp_path) -> Settings:
 @pytest.fixture()
 def client(settings: Settings):
     # Reset the module-level singletons so each test gets a fresh client.
+    from sse_starlette.sse import AppStatus
+
     from jarvis_bridge import apns as apns_mod
+    from jarvis_bridge import approvals as approvals_mod
     from jarvis_bridge import runs as runs_mod
     from jarvis_bridge import webui_client as wc
 
     wc._client = None
     runs_mod._registry = None
     apns_mod._apns = None
+    approvals_mod._registry = None
+    # sse-starlette keeps this event at module scope; reset it between the
+    # per-test TestClient event loops so independent SSE tests do not share an
+    # asyncio primitive bound to a prior loop.
+    AppStatus.should_exit_event = None
+    AppStatus.should_exit = False
     with TestClient(app) as c:
         yield c
 
@@ -304,3 +313,71 @@ def test_chat_start_defaults_to_jarvis_profile(client, settings):
         "session_id": "session-1",
         "name": "jarvis",
     }
+
+
+@respx.mock
+def test_approval_event_is_registered_and_one_action_decision_forwards(client, settings):
+    respx.post("http://webui.test/api/auth/login").mock(
+        return_value=respx.MockResponse(
+            status_code=200,
+            json={"ok": True},
+            cookies={"hermes_session": "approval-token.approval-signature"},
+        )
+    )
+    respx.get("http://webui.test/api/chat/stream").mock(
+        return_value=respx.MockResponse(
+            status_code=200,
+            content=(
+                b"id: stream-approval:1\nevent: approval\n"
+                b'data: {"approval_id":"a1","tool_name":"gmail_send",'
+                b'"command":"send email","description":"Send the draft",'
+                b'"choices":["once","deny"]}\n\n'
+                b'id: stream-approval:2\nevent: done\ndata: {"status":"done"}\n\n'
+            ),
+            content_type="text/event-stream",
+        )
+    )
+    upstream_decision = respx.post("http://webui.test/api/approval/respond").mock(
+        return_value=respx.MockResponse(status_code=200, json={"ok": True})
+    )
+
+    from jarvis_bridge import runs as runs_mod
+
+    assert runs_mod._registry is not None
+    runs_mod._registry.record_start("stream-approval", "session-approval")
+    stream = client.get(
+        "/api/chat/stream",
+        params={"stream_id": "stream-approval"},
+        headers={"Authorization": "Bearer phone-token-hex"},
+    )
+    assert stream.status_code == 200
+
+    approvals = client.get(
+        "/mobile/approvals",
+        headers={"Authorization": "Bearer phone-token-hex"},
+    )
+    assert approvals.status_code == 200
+    record = approvals.json()["approvals"][0]
+    assert record["approval_id"] == "a1"
+    assert record["action_class"] == "send_email"
+    assert record["status"] == "pending"
+
+    decision = client.post(
+        "/mobile/approvals/a1/decision",
+        headers={"Authorization": "Bearer phone-token-hex"},
+        json={"decision": "approve"},
+    )
+    assert decision.status_code == 200
+    assert decision.json()["status"] == "consumed"
+    assert json.loads(upstream_decision.calls[0].request.content) == {
+        "approval_id": "a1",
+        "choice": "once",
+        "run_id": "stream-approval",
+    }
+
+    replay = client.post(
+        "/mobile/approvals/a1/decision",
+        headers={"Authorization": "Bearer phone-token-hex"},
+        json={"decision": "approve"},
+    )
+    assert replay.status_code == 409

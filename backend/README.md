@@ -41,6 +41,7 @@ agent remains on the private Docker network.
 - `/api/*` — authenticated upstream-compatible JSON routes.
 - `/api/chat/stream` — authenticated SSE proxy with resume support.
 - `/mobile/device` — authenticated APNs device registration.
+- `/mobile/approvals` — authenticated list/detail/one-action approval API.
 - `/__bridge/health` — unauthenticated container liveness probe.
 - `/__bridge/version` — unauthenticated JARVIS bridge metadata.
 
@@ -59,6 +60,16 @@ cp deployment/jarvis-profile/config.yaml "$HERMES_HOME/profiles/jarvis/config.ya
 ```
 
 See `deployment/jarvis-profile/README.md` for the profile ownership boundary.
+
+Secretary side effects are approval-gated. JARVIS records upstream approval
+events in the existing runs SQLite database and exposes only one-action
+`approve` or `deny` decisions. Approvals expire after 900 seconds by default;
+configure `JARVIS_APPROVAL_TTL_SECONDS` to change that window. Session-wide and
+permanent grants are not exposed by the mobile flow.
+
+Phase 2 includes an in-memory task contract for deterministic tests only. Gmail,
+Google Calendar, durable task storage, scheduled jobs, and production APNs are
+still deferred until the connector phase.
 
 ## Verification
 

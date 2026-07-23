@@ -17,6 +17,7 @@ reverse proxy (nginx, cloudflared) doesn't buffer chunks.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import re
@@ -28,6 +29,7 @@ from fastapi.responses import StreamingResponse
 from sse_starlette.sse import EventSourceResponse
 
 from .apns import APNsClient, get_apns
+from .approvals import ApprovalRegistry, get_approval_registry
 from .auth import require_bearer
 from .config import Settings, get_settings
 from .runs import RunsRegistry, get_registry
@@ -59,6 +61,7 @@ async def _stream_from_webui(
     params: dict[str, str],
     settings: Settings,
     runs: RunsRegistry,
+    approvals: ApprovalRegistry,
     apns: APNsClient | None,
 ) -> AsyncIterator[dict]:
     """Open an SSE request to the webui and yield each event as a dict."""
@@ -86,6 +89,45 @@ async def _stream_from_webui(
 
     stream_id = params.get("stream_id", "")
     fired_terminal = False
+
+    def record_approval(data: str) -> str:
+        """Persist and, when needed, identify an approval for the phone."""
+        try:
+            payload = json.loads(data) if data else {}
+        except (TypeError, ValueError):
+            payload = {}
+        if not isinstance(payload, dict):
+            payload = {}
+        approval_id = payload.get("approval_id")
+        if not isinstance(approval_id, str) or not approval_id:
+            digest = hashlib.sha256(data.encode("utf-8")).hexdigest()[:16]
+            approval_id = f"{stream_id}:approval:{digest}"
+        session_id = payload.get("session_id")
+        if not isinstance(session_id, str) or not session_id:
+            summary = runs.terminal_summary(stream_id)
+            session_id = (summary or {}).get("session_id")
+        if not isinstance(session_id, str) or not session_id:
+            logger.warning("approval event has no session id (stream=%s)", stream_id)
+            return data
+        command = payload.get("command") or payload.get("preview") or "Requested action"
+        description = payload.get("description") or payload.get("message") or command
+        tool_name = payload.get("tool_name") or payload.get("name") or "upstream tool"
+        approvals.register(
+            approval_id=approval_id,
+            session_id=session_id,
+            stream_id=stream_id,
+            tool_name=str(tool_name),
+            command=str(command),
+            description=str(description),
+            source="upstream",
+            upstream_approval_id=payload.get("approval_id")
+            if isinstance(payload.get("approval_id"), str)
+            else None,
+        )
+        if "approval_id" not in payload:
+            payload["approval_id"] = approval_id
+            return json.dumps(payload, ensure_ascii=False)
+        return data
 
     async def gen() -> AsyncIterator[dict]:
         nonlocal fired_terminal
@@ -193,6 +235,11 @@ async def _stream_from_webui(
                 # yield
                 if current_data_parts or current_event:
                     data = b"\n".join(current_data_parts).decode("utf-8", "replace")
+                    if current_event == "approval":
+                        try:
+                            data = record_approval(data)
+                        except Exception:
+                            logger.exception("record_approval failed")
                     evt: dict = {"data": data}
                     if current_event:
                         evt["event"] = current_event
@@ -242,6 +289,7 @@ async def chat_stream(
     webui: WebUIClient = Depends(get_webui_client),  # noqa: B008
     settings: Settings = Depends(get_settings),  # noqa: B008
     runs: RunsRegistry = Depends(get_registry),  # noqa: B008
+    approvals: ApprovalRegistry = Depends(get_approval_registry),  # noqa: B008
 ) -> StreamingResponse:
     """Phone-facing SSE proxy.
 
@@ -255,7 +303,7 @@ async def chat_stream(
         params["after_event_id"] = after_event_id
 
     apns = get_apns()
-    gen = _stream_from_webui(webui, "/api/chat/stream", params, settings, runs, apns)
+    gen = _stream_from_webui(webui, "/api/chat/stream", params, settings, runs, approvals, apns)
     return EventSourceResponse(gen, ping=5)
 
 

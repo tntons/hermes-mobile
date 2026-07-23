@@ -8,6 +8,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from .apns import init_apns
+from .approvals import init_approval_registry
+from .approvals import router as approval_router
 from .config import get_settings
 from .proxy import router as proxy_router
 from .runs import init_registry
@@ -30,6 +32,7 @@ async def lifespan(_app: FastAPI):
         logger.warning("WEBUI_PASSWORD is empty — webui login will fail")
 
     init_registry(settings.runs_db_path)
+    init_approval_registry(settings.runs_db_path, settings.jarvis_approval_ttl_seconds)
     apns = init_apns(settings)
     webui = await init_webui_client(settings)
     logger.info(
@@ -56,6 +59,7 @@ app = FastAPI(
 # before the generic `/api/{rest}` catch-all in the JSON proxy.
 app.include_router(sse_router)
 app.include_router(proxy_router)
+app.include_router(approval_router)
 
 
 @app.get("/__bridge/health")

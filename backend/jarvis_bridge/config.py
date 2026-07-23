@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     # them explicitly.
     jarvis_profile: str = Field(default="jarvis")
     jarvis_personality: str = Field(default="jarvis")
+    jarvis_approval_ttl_seconds: float = Field(default=900.0)
 
     # Runs registry / SQLite
     runs_db_path: str = Field(default="./runs.sqlite")
