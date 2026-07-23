@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 import respx
 from fastapi.testclient import TestClient
 
-from hermes_bridge.config import Settings
-from hermes_bridge.main import app
-from hermes_bridge.webui_client import init_webui_client
+from jarvis_bridge.config import Settings
+from jarvis_bridge.main import app
 
 
 @pytest.fixture()
@@ -17,7 +18,8 @@ def settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
     monkeypatch.setenv("WEBUI_PASSWORD", "secret")
     monkeypatch.setenv("MOBILE_TOKEN", "phone-token-hex")
     # Re-import settings each test (pydantic-settings caches).
-    from hermes_bridge import config as cfg
+    from jarvis_bridge import config as cfg
+
     cfg._settings = None  # type: ignore[attr-defined]
     return cfg.get_settings()
 
@@ -25,9 +27,10 @@ def settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
 @pytest.fixture()
 def client(settings: Settings):
     # Reset the module-level singletons so each test gets a fresh client.
-    from hermes_bridge import webui_client as wc
-    from hermes_bridge import runs as runs_mod
-    from hermes_bridge import apns as apns_mod
+    from jarvis_bridge import apns as apns_mod
+    from jarvis_bridge import runs as runs_mod
+    from jarvis_bridge import webui_client as wc
+
     wc._client = None
     runs_mod._registry = None
     apns_mod._apns = None
@@ -74,9 +77,7 @@ def test_login_then_sessions_pass_through(client, settings):
         )
     )
 
-    r = client.get(
-        "/api/sessions", headers={"Authorization": "Bearer phone-token-hex"}
-    )
+    r = client.get("/api/sessions", headers={"Authorization": "Bearer phone-token-hex"})
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["sessions"][0]["title"] == "hello"
@@ -112,3 +113,69 @@ def test_bridge_liveness(client):
     r = client.get("/__bridge/health")
     assert r.status_code == 200
     assert r.json()["status"] == "ok"
+
+
+def test_bridge_version_is_jarvis(client):
+    r = client.get("/__bridge/version")
+    assert r.status_code == 200
+    assert r.json() == {"name": "jarvis-mobile-bridge", "version": "0.1.0"}
+
+
+@respx.mock
+def test_session_creation_defaults_to_jarvis_profile(client, settings):
+    respx.post("http://webui.test/api/auth/login").mock(
+        return_value=respx.MockResponse(status_code=200, json={"ok": True})
+    )
+    upstream = respx.post("http://webui.test/api/session/new").mock(
+        return_value=respx.MockResponse(status_code=200, json={"session": {"session_id": "s1"}})
+    )
+
+    r = client.post(
+        "/api/session/new",
+        headers={"Authorization": "Bearer phone-token-hex"},
+        json={"workspace": "default"},
+    )
+
+    assert r.status_code == 200
+    assert json.loads(upstream.calls[0].request.content)["profile"] == "jarvis"
+
+
+@respx.mock
+def test_explicit_profile_is_preserved(client, settings):
+    respx.post("http://webui.test/api/auth/login").mock(
+        return_value=respx.MockResponse(status_code=200, json={"ok": True})
+    )
+    upstream = respx.post("http://webui.test/api/session/new").mock(
+        return_value=respx.MockResponse(status_code=200, json={"session": {"session_id": "s1"}})
+    )
+
+    r = client.post(
+        "/api/session/new",
+        headers={"Authorization": "Bearer phone-token-hex"},
+        json={"profile": "engineering"},
+    )
+
+    assert r.status_code == 200
+    assert json.loads(upstream.calls[0].request.content)["profile"] == "engineering"
+
+
+@respx.mock
+def test_chat_start_defaults_to_jarvis_profile(client, settings):
+    respx.post("http://webui.test/api/auth/login").mock(
+        return_value=respx.MockResponse(status_code=200, json={"ok": True})
+    )
+    upstream = respx.post("http://webui.test/api/chat/start").mock(
+        return_value=respx.MockResponse(
+            status_code=200,
+            json={"stream_id": "stream-1", "session_id": "session-1"},
+        )
+    )
+
+    r = client.post(
+        "/api/chat/start",
+        headers={"Authorization": "Bearer phone-token-hex"},
+        json={"session_id": "session-1", "message": "Check my schedule"},
+    )
+
+    assert r.status_code == 200
+    assert json.loads(upstream.calls[0].request.content)["profile"] == "jarvis"

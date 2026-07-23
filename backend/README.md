@@ -1,63 +1,65 @@
-# Hermes Mobile Bridge
+# JARVIS Mobile Bridge
 
-Thin FastAPI wrapper that authenticates the Hermes iOS app via a single bearer
-token and proxies every call (1:1) to a running [hermes-webui](https://github.com/nesquena/hermes-webui)
-on `127.0.0.1:8787`.
+FastAPI bridge for the JARVIS iPhone app. The phone uses bearer authentication
+over HTTPS; the bridge keeps the upstream Hermes Agent/WebUI contract private
+and handles its cookie + CSRF session internally.
 
+```text
+iPhone → Cloudflare Tunnel → jarvis-bridge → private jarvis-agent
+                              bearer          upstream Hermes runtime
 ```
-iPhone  ── Bearer ──►  bridge (:8080)  ── cookie+CSRF ──►  webui (:8787)
-```
 
-## Run
+The upstream runtime remains Hermes internally. Names such as `WEBUI_PASSWORD`,
+`MOBILE_TOKEN`, `HERMES_WEBUI_PASSWORD`, and `/api/*` are compatibility
+identifiers and must not be renamed in the upstream integration.
+
+## Local run
 
 ```bash
-cp .env.example .env   # edit WEBUI_PASSWORD + MOBILE_TOKEN
+cp .env.example .env
+# Set WEBUI_PASSWORD, MOBILE_TOKEN, and optionally JARVIS_PROFILE.
 uv sync
-uv run uvicorn hermes_bridge.main:app --reload --port 8080
+uv run uvicorn jarvis_bridge.main:app --reload --port 8080
 ```
 
-Or with Docker (also runs the webui side-by-side):
+## Docker run
 
 ```bash
 export WEBUI_PASSWORD=$(openssl rand -hex 16)
 export MOBILE_TOKEN=$(openssl rand -hex 32)
-HERMES_HOME=$PWD/hermes-home docker compose up -d --build
+docker compose up -d --build
 ```
 
-## Why this exists
+The Compose services are named `jarvis-agent`, `jarvis-bridge`, and the
+optional `jarvis-cloudflared`. Only the bridge publishes a local port; the
+agent remains on the private Docker network.
 
-[hermes-webui](https://github.com/nesquena/hermes-webui) only supports
-cookie+CSRF auth. We want a stable bearer token the iPhone can put in
-Keychain and present from anywhere. The bridge performs one
-`POST /api/auth/login` at boot, caches the `hermes_session` cookie + CSRF
-token, and re-attaches them on every proxied call.
+## Endpoints
 
-It also adds the two pieces the iOS backgrounding story needs:
-1. A **runs registry** (SQLite) that records `stream_id → last_event_id` so
-   the phone can resume a long turn after being backgrounded/disconnected.
-2. **APNs hooks** that fire a push when a turn ends, while the phone is
-   away from the SSE socket.
+- `/health` — authenticated upstream health proxy.
+- `/api/*` — authenticated upstream-compatible JSON routes.
+- `/api/chat/stream` — authenticated SSE proxy with resume support.
+- `/mobile/device` — authenticated APNs device registration.
+- `/__bridge/health` — unauthenticated container liveness probe.
+- `/__bridge/version` — unauthenticated JARVIS bridge metadata.
 
-## Endpoints exposed
+When a session or chat-start request omits `profile`, the bridge selects the
+upstream-supported profile named by `JARVIS_PROFILE` (default: `jarvis`). It
+does not rewrite user messages or fork the Hermes Agent source.
 
-- Every webui route under `/api/*` (proxy, JSON)
-- `/api/chat/start`, `/api/chat/stream`, `/api/chat/stream/status`,
-  `/api/chat/cancel` (pass-through, with APNs hook on terminal events)
-- `/health` (proxy of webui's `/health`)
-- `/mobile/device` (register APNs device token)
-- `/__bridge/health` (ungated Docker liveness)
-
-## Smoke
+## Verification
 
 ```bash
-export HERMES_MOBILE_TOKEN=$(grep MOBILE_TOKEN .env | cut -d= -f2)
-curl -fsSL -H "Authorization: Bearer $HERMES_MOBILE_TOKEN" \
-     http://127.0.0.1:8080/health | jq
-curl -fsSL -H "Authorization: Bearer $HERMES_MOBILE_TOKEN" \
-     http://127.0.0.1:8080/api/sessions | jq '.sessions | length'
+uv run pytest -q
+uv run ruff check .
+uv run ruff format --check .
+
+curl -fsSL -H "Authorization: Bearer $MOBILE_TOKEN" \
+  http://127.0.0.1:8080/health | jq
+curl -fsSL -H "Authorization: Bearer $MOBILE_TOKEN" \
+  http://127.0.0.1:8080/api/sessions | jq '.sessions | length'
 ```
 
-## HTTPS for the phone
-
-In production put this behind a Cloudflare Tunnel (free, stable hostname,
-real TLS). Local dev: `cloudflared tunnel --url http://localhost:8080`.
+For phone access, use a named Cloudflare Tunnel pointing at
+`http://jarvis-bridge:8080` from the tunnel container, or at
+`http://127.0.0.1:8080` during local development.

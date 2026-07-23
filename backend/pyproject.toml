@@ -1,7 +1,7 @@
 [project]
-name = "hermes-mobile-bridge"
+name = "jarvis-mobile-bridge"
 version = "0.1.0"
-description = "Bearer-auth bridge between the Hermes iOS app and hermes-webui"
+description = "Bearer-auth bridge between the JARVIS iPhone app and hermes-webui"
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
 license = { text = "MIT" }
@@ -42,7 +42,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["hermes_bridge"]
+packages = ["jarvis_bridge"]
 
 [tool.ruff]
 line-length = 100

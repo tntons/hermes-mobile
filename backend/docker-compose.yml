@@ -1,8 +1,8 @@
 services:
-  webui:
+  jarvis-agent:
     # The official image published by hermes-webui. Runs the same FastAPI on :8787.
     image: ghcr.io/nesquena/hermes-webui:latest
-    container_name: hermes-webui
+    container_name: jarvis-agent
     restart: unless-stopped
     environment:
       HERMES_WEBUI_HOST: 0.0.0.0
@@ -18,17 +18,18 @@ services:
     expose:
       - "8787"
 
-  bridge:
+  jarvis-bridge:
     build: .
-    container_name: hermes-bridge
+    container_name: jarvis-bridge
     restart: unless-stopped
     depends_on:
-      webui:
+      jarvis-agent:
         condition: service_healthy
     environment:
-      WEBUI_BASE_URL: http://webui:8787
+      WEBUI_BASE_URL: http://jarvis-agent:8787
       WEBUI_PASSWORD: ${WEBUI_PASSWORD:?must be set}
       MOBILE_TOKEN: ${MOBILE_TOKEN:?must be set}
+      JARVIS_PROFILE: ${JARVIS_PROFILE:-jarvis}
       RUNS_DB_PATH: /data/runs.sqlite
       BRIDGE_HOST: 0.0.0.0
       BRIDGE_PORT: "8080"
@@ -49,14 +50,14 @@ services:
       retries: 5
 
   # Optional: uncomment to expose the bridge publicly with a stable HTTPS hostname.
-  # cloudflared:
+  # jarvis-cloudflared:
   #   image: cloudflare/cloudflared:latest
   #   restart: unless-stopped
   #   command: tunnel --no-autoupdate run
   #   environment:
   #     TUNNEL_TOKEN: ${TUNNEL_TOKEN:?required}
   #   depends_on:
-  #     bridge:
+  #     jarvis-bridge:
   #       condition: service_healthy
 
 volumes:

@@ -1,32 +1,27 @@
-# Hermes design system
+# JARVIS design system
 
-Hermes uses a conversation-first visual language inspired by the calm, low-chrome layout of modern AI chat clients. It is intentionally not a brand copy: Hermes keeps its green accent and treats conversations, tools, and streaming state as first-class product information.
+JARVIS uses a conversation-first visual language with quiet dark surfaces,
+clear streaming states, and a restrained green assistant accent.
 
 ## Principles
 
-- Conversation is the primary surface. Avoid decorative cards around ordinary assistant text.
-- Use one neutral canvas and a small number of elevation steps. Borders are subtle separators, not containers everywhere.
-- Keep the primary action close to the keyboard: the composer is a floating control, not a full-width toolbar.
-- Use green for Hermes actions and status, not for every icon or label.
-- Prefer semantic hierarchy over large headings: screen title, row title, body, metadata.
+- JARVIS is calm, useful, and operational.
+- Conversation, tools, approvals, and streaming state are first-class.
+- Keep the interface low-chrome and readable on a phone.
+- Use green for JARVIS actions and healthy status, not for every icon.
+- Show confirmation before external secretary actions in future phases.
 
 ## Tokens
 
-| Token | Value / intent |
-| --- | --- |
-| Canvas | `#202020` dark neutral |
-| Surface | `#2E2E2E` control and secondary surface |
-| Elevated surface | `#3C3C3C` menus, expanded tool content |
-| Primary text | white at 94% |
-| Secondary text | white at 64% |
-| Tertiary text | white at 42% |
-| Accent | Hermes green `rgb(107, 209, 153)` |
-| Spacing | 4 / 8 / 12 / 16 / 20 / 24 / 32pt |
-| Radius | 8pt small, 14pt controls, 18pt cards, capsule pills |
+| Token | Value |
+|---|---|
+| Background | `rgb(32, 32, 32)` |
+| Surface | `rgb(46, 46, 46)` |
+| Elevated surface | `rgb(60, 60, 60)` |
+| JARVIS accent | `rgb(107, 209, 153)` |
+| Primary text | White at 94% |
+| Secondary text | White at 64% |
+| Tertiary text | White at 42% |
 
-## Screen patterns
-
-- **Chats:** compact inline title, quiet list rows, simple leading icon, model and message count as metadata, no oversized filled icon tiles.
-- **Conversation:** assistant responses sit directly on the canvas; user messages use a restrained trailing bubble; reasoning and tools use lightweight disclosure rows.
-- **Composer:** rounded surface with a clear text field and high-contrast send/stop affordance.
-- **Settings / onboarding:** native grouped controls, short sections, one primary action per screen.
+The current Swift implementation is in `ios/JARVIS/JarvisApp.swift` as
+`JarvisTheme`. The app icon uses the same graphite and green palette.
