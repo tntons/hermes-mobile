@@ -214,7 +214,7 @@ public final class ConversationViewModel {
     /// Resume an in-flight run after returning from background.
     public func resumeIfNeeded() async {
         if isMock { return }
-        guard let client = client else { return }
+        guard client != nil else { return }
         let open = JarvisDAO.openCursors().filter { $0.sessionID == sessionID }
         guard let cursor = open.first else { return }
         currentStreamID = cursor.streamID

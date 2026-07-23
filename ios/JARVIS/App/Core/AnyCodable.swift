@@ -8,7 +8,10 @@
 
 import Foundation
 
-public struct AnyCodable: Codable, Hashable, Sendable {
+// Values are created from decoded JSON and treated as immutable transport
+// payloads throughout the app. The erased `Any` storage prevents the compiler
+// from proving Sendable conformance, so this boundary is explicitly audited.
+public struct AnyCodable: Codable, Hashable, @unchecked Sendable {
     public let value: Any
 
     public init(_ value: Any) {

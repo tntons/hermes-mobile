@@ -5,7 +5,7 @@ The original Hermes implementation is preserved on `legacy/hermes-baseline`.
 
 ## Verified
 
-- Backend: 10 tests pass, Ruff lint passes, Ruff format check passes.
+- Backend: 12 tests pass, Ruff lint passes, Ruff format check passes.
 - Python bytecode compilation passes.
 - JARVIS Swift packages resolve.
 - JARVIS asset catalog compiles.
@@ -16,9 +16,11 @@ The original Hermes implementation is preserved on `legacy/hermes-baseline`.
 - Physical-device builds require a local Apple development team.
 - The existing iOS scheme has no unit-test target.
 - APNs remains optional and deferred.
-- The upstream profile configuration from
-  `backend/deployment/jarvis-profile/config.yaml` must be installed in the
-  deployed Hermes runtime for the `jarvis` persona to take effect.
+- A real Hermes runtime and named Cloudflare Tunnel still require deployment
+  credentials for end-to-end phone smoke testing.
+- Compose seeds the upstream profile configuration from
+  `backend/deployment/jarvis-profile/config.yaml` into a new Hermes home. An
+  existing operator-managed profile is preserved and can be refreshed manually.
 
 ## Compatibility
 

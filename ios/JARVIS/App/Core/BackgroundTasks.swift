@@ -35,7 +35,7 @@ public enum JarvisBackgroundTasks {
         scheduleRefresh()
         task.expirationHandler = { task.setTaskCompleted(success: false) }
 
-        let worker = Task { @MainActor in
+        Task { @MainActor in
             guard KeychainStore.shared.isConfigured else {
                 task.setTaskCompleted(success: false); return
             }

@@ -24,6 +24,7 @@ on the server hosting the agent, bridge, and tunnel.
 - Bearer authentication from the phone to `jarvis-bridge`.
 - SQLite run registry for SSE resume and terminal state.
 - Optional named Cloudflare Tunnel service named `jarvis-cloudflared`.
+- Non-destructive first-run seeding for the default upstream JARVIS persona.
 - Default upstream profile and personality: `jarvis`.
 - Tracked upstream persona template: `backend/deployment/jarvis-profile/config.yaml`.
 
@@ -33,8 +34,9 @@ unchanged because the upstream runtime depends on them.
 
 ## Development
 
-See `AGENTS.md` for commands and `HANDOFF.md` for the current verification
-record. The authoritative migration scope is in `IMPLEMENTATION_PLAN.md`.
+See `AGENTS.md` for commands, `HANDOFF.md` for the current verification
+record, and `docs/ROLLBACK_BASELINE.md` for the preserved Hermes rollback
+contract. The authoritative migration scope is in `IMPLEMENTATION_PLAN.md`.
 
 ```bash
 cd backend && uv sync && uv run pytest -q

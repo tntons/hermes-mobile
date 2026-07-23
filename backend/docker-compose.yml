@@ -1,4 +1,26 @@
 services:
+  # Seed the default JARVIS persona once without overwriting an operator's
+  # existing profile configuration. This is a deployment helper, not a
+  # user-facing runtime service.
+  jarvis-profile-init:
+    image: busybox:1.36.1
+    container_name: jarvis-profile-init
+    restart: "no"
+    volumes:
+      - ${HERMES_HOME:-./hermes-home}:/.hermes
+      - ./deployment/jarvis-profile/config.yaml:/seed/jarvis-config.yaml:ro
+    command:
+      - sh
+      - -ec
+      - |
+        mkdir -p /.hermes/profiles/jarvis
+        if [ ! -f /.hermes/profiles/jarvis/config.yaml ]; then
+          cp /seed/jarvis-config.yaml /.hermes/profiles/jarvis/config.yaml
+          echo "seeded JARVIS profile"
+        else
+          echo "preserved existing JARVIS profile"
+        fi
+
   jarvis-agent:
     # The official image published by hermes-webui. Runs the same FastAPI on :8787.
     image: ghcr.io/nesquena/hermes-webui:latest
@@ -10,6 +32,9 @@ services:
       HERMES_WEBUI_PASSWORD: ${WEBUI_PASSWORD:?must be set}
     volumes:
       - ${HERMES_HOME:-./hermes-home}:/.hermes
+    depends_on:
+      jarvis-profile-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8787/health"]
       interval: 10s

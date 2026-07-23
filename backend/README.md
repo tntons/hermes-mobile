@@ -50,7 +50,8 @@ does not rewrite user messages or fork the Hermes Agent source. When
 `personality` is omitted, it selects `JARVIS_PERSONALITY` (default: `jarvis`)
 and persists that selection through the upstream personality endpoint.
 
-Install the actual upstream persona before deployment:
+The Compose stack seeds the default persona automatically when the profile is
+missing. For a manual install or an explicit profile refresh:
 
 ```bash
 mkdir -p "$HERMES_HOME/profiles/jarvis"

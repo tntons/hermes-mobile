@@ -12,6 +12,8 @@ runtime is intended to run behind a named Cloudflare Tunnel.
 - `backend/docker-compose.yml` — private agent/bridge deployment topology.
 - `HANDOFF.md` — current migration state and verification record.
 - `IMPLEMENTATION_PLAN.md` — authoritative Phase 0/1 plan.
+- `docs/ROLLBACK_BASELINE.md` — preserved Hermes branch, commit, and API
+  contract.
 
 ## Contracts
 

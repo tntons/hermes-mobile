@@ -1,8 +1,9 @@
 # JARVIS upstream profile
 
 The bridge defaults new mobile sessions to the upstream profile `jarvis` and
-the upstream personality `jarvis`. Install the tracked configuration into the
-Hermes home used by `jarvis-agent` before deploying the stack:
+the upstream personality `jarvis`. `docker compose up` seeds this file into a
+new Hermes home automatically without overwriting an existing profile. For a
+manual install or an explicit profile refresh, use:
 
 ```bash
 mkdir -p "$HERMES_HOME/profiles/jarvis"

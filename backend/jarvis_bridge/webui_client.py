@@ -205,14 +205,20 @@ class WebUIClient:
     ) -> httpx.Response:
         """Open an SSE/`text/event-stream` request. Caller closes the response."""
         await self._ensure_session()
-        req = self._client.build_request(method, path, params=params, headers=self._headers())
         timeout = httpx.Timeout(
             connect=5.0,
             read=self._settings.sse_proxy_write_deadline_seconds,
             write=10.0,
             pool=10.0,
         )
-        return await self._client.send(req, stream=True, timeout=timeout)
+        req = self._client.build_request(
+            method,
+            path,
+            params=params,
+            headers=self._headers(),
+            timeout=timeout,
+        )
+        return await self._client.send(req, stream=True)
 
     # ---------------- health ----------------
 

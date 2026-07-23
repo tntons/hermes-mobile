@@ -29,7 +29,8 @@ and product metadata. Hermes Agent remains upstream and is not forked.
   does not provide an explicit value. The bridge persists the personality via
   the upstream `/api/personality/set` route because `/api/session/new` does not
   consume that field directly.
-- Backend regression suite expanded to 10 tests.
+- Backend regression suite expanded to 12 tests, including re-authentication
+  and SSE resume/run-state coverage.
 - Ruff lint and format checks pass.
 - iOS project, target, scheme, source paths, and application-facing Swift types
   are renamed to JARVIS/Jarvis.
@@ -41,25 +42,32 @@ and product metadata. Hermes Agent remains upstream and is not forked.
 - Docker services are `jarvis-agent` and `jarvis-bridge`; Cloudflare is
   documented as `jarvis-cloudflared`.
 - The tracked upstream persona template is
-  `backend/deployment/jarvis-profile/config.yaml`; it must be installed into
-  the mounted Hermes home before deployment.
+  `backend/deployment/jarvis-profile/config.yaml`; Compose seeds it into a new
+  mounted Hermes home without overwriting an operator-managed profile.
 - Root, backend, design-system, handoff, and agent documentation updated.
+- Rollback contract recorded in `docs/ROLLBACK_BASELINE.md`.
 
 ## Verification record
 
 Passed:
 
-- `backend/uv run pytest -q` — 10 passed.
+- `backend/uv run pytest -q` — 12 passed.
 - `backend/uv run ruff check .` — passed.
 - `backend/uv run ruff format --check .` — passed.
 - `backend/python3 -m py_compile jarvis_bridge/*.py tests/*.py` — passed.
+- `legacy/hermes-baseline` Hermes simulator build with signing disabled — passed.
 - `ios/xcodebuild -resolvePackageDependencies -project JARVIS.xcodeproj -scheme JARVIS` — passed.
 - `ios/actool` compilation of the JARVIS asset catalog — passed.
-- Fresh derived-data simulator build of the JARVIS target with signing disabled — passed.
+- Fresh derived-data simulator build of the JARVIS target with signing disabled
+  and Swift warnings treated as errors — passed.
+- Compose config validates the private agent/bridge boundary and the
+  non-destructive profile seeder — passed.
 
 The physical-device build still requires a developer team configured locally.
 There is no iOS unit-test target yet; the existing scheme has an empty test
 action, so simulator compile and runtime smoke checks are the current iOS gate.
+The real Hermes host and named Cloudflare Tunnel still need operator
+credentials for end-to-end phone smoke testing.
 
 ## Important compatibility rules
 

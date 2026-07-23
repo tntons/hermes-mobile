@@ -140,10 +140,10 @@ public enum SSEParser {
         let anyData = AnyCodable(parseJSON(data) ?? NSNull())
         switch name {
         case "token":
-            let text = (try? anyData.value as? String) ?? extractText(anyData.value) ?? ""
+            let text = (anyData.value as? String) ?? extractText(anyData.value) ?? ""
             return .token(text: text)
         case "reasoning":
-            let text = (try? anyData.value as? String) ?? extractText(anyData.value) ?? ""
+            let text = (anyData.value as? String) ?? extractText(anyData.value) ?? ""
             return .reasoning(text: text)
         case "interim_assistant":
             let dict = (anyData.value as? [String: Any]) ?? [:]

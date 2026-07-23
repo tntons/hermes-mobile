@@ -1,4 +1,4 @@
-"""Test that the generic JSON pass-through attaches the webui cookie and CSRF."""
+"""Exercise the JARVIS bridge against a stub upstream Hermes WebUI."""
 
 from __future__ import annotations
 
@@ -13,10 +13,11 @@ from jarvis_bridge.main import app
 
 
 @pytest.fixture()
-def settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
+def settings(monkeypatch: pytest.MonkeyPatch, tmp_path) -> Settings:
     monkeypatch.setenv("WEBUI_BASE_URL", "http://webui.test")
     monkeypatch.setenv("WEBUI_PASSWORD", "secret")
     monkeypatch.setenv("MOBILE_TOKEN", "phone-token-hex")
+    monkeypatch.setenv("RUNS_DB_PATH", str(tmp_path / "runs.sqlite"))
     # Re-import settings each test (pydantic-settings caches).
     from jarvis_bridge import config as cfg
 
@@ -107,6 +108,80 @@ def test_health_proxy(client, settings):
     r = client.get("/health", headers={"Authorization": "Bearer phone-token-hex"})
     assert r.status_code == 200
     assert r.json()["status"] == "ok"
+
+
+@respx.mock
+def test_webui_401_reauthenticates_once(client, settings):
+    login = respx.post("http://webui.test/api/auth/login").mock(
+        side_effect=[
+            respx.MockResponse(
+                status_code=200,
+                json={"ok": True},
+                cookies={"hermes_session": "old-token.old-signature"},
+            ),
+            respx.MockResponse(
+                status_code=200,
+                json={"ok": True},
+                cookies={"hermes_session": "new-token.new-signature"},
+            ),
+        ]
+    )
+    sessions = respx.get("http://webui.test/api/sessions").mock(
+        side_effect=[
+            respx.MockResponse(status_code=401, json={"error": "expired"}),
+            respx.MockResponse(status_code=200, json={"sessions": []}),
+        ]
+    )
+
+    r = client.get("/api/sessions", headers={"Authorization": "Bearer phone-token-hex"})
+
+    assert r.status_code == 200
+    assert len(login.calls) == 2
+    assert len(sessions.calls) == 2
+    assert sessions.calls[0].request.headers.get("x-hermes-csrf-token") == "old-token"
+    assert sessions.calls[1].request.headers.get("x-hermes-csrf-token") == "new-token"
+
+
+@respx.mock
+def test_chat_stream_forwards_resume_and_records_run_state(client, settings):
+    respx.post("http://webui.test/api/auth/login").mock(
+        return_value=respx.MockResponse(
+            status_code=200,
+            json={"ok": True},
+            cookies={"hermes_session": "stream-token.stream-signature"},
+        )
+    )
+    upstream = respx.get("http://webui.test/api/chat/stream").mock(
+        return_value=respx.MockResponse(
+            status_code=200,
+            content=(
+                b'id: stream-1:5\nevent: delta\ndata: {"text":"Hello"}\n\n'
+                b'id: stream-1:6\nevent: done\ndata: {"status":"done"}\n\n'
+            ),
+            content_type="text/event-stream",
+        )
+    )
+
+    from jarvis_bridge import runs as runs_mod
+
+    assert runs_mod._registry is not None
+    runs_mod._registry.record_start("stream-1", "session-1")
+    r = client.get(
+        "/api/chat/stream",
+        params={"stream_id": "stream-1", "after_event_id": "stream-1:4"},
+        headers={"Authorization": "Bearer phone-token-hex"},
+    )
+
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/event-stream")
+    assert "id: stream-1:5" in r.text
+    assert 'data: {"text":"Hello"}' in r.text
+    assert "event: done" in r.text
+    assert upstream.calls[0].request.url.params["after_event_id"] == "stream-1:4"
+    summary = runs_mod._registry.terminal_summary("stream-1")
+    assert summary is not None
+    assert summary["last_event_id"] == "stream-1:6"
+    assert summary["terminal_state"] == "done"
 
 
 def test_bridge_liveness(client):
@@ -224,6 +299,7 @@ def test_chat_start_defaults_to_jarvis_profile(client, settings):
     payload = json.loads(upstream.calls[0].request.content)
     assert payload["profile"] == "jarvis"
     assert payload["personality"] == "jarvis"
+    assert payload["message"] == "Check my schedule"
     assert json.loads(personality.calls[0].request.content) == {
         "session_id": "session-1",
         "name": "jarvis",

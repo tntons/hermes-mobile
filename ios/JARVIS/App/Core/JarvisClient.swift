@@ -131,7 +131,7 @@ public actor JarvisClient {
     }
 
     public func fetchSessions(includeArchived: Bool = false) async throws -> [Session] {
-        var api = JarvisAPI.sessions
+        let api = JarvisAPI.sessions
         let resp: SessionListResponse = try await getJSON(api)
         return resp.sessions
     }
