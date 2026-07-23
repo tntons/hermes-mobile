@@ -14,6 +14,7 @@ import SwiftUI
 struct MessageListView: View {
     @Binding var messages: [ChatMessage]
     let isStreaming: Bool
+    let onRegenerate: () -> Void
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -23,7 +24,9 @@ struct MessageListView: View {
                         MessageCell(
                             message: m,
                             isStreaming: isStreaming && idx == messages.count - 1,
-                            isLastInTurn: isLastTurnBoundary(at: idx)
+                            isLastInTurn: isLastTurnBoundary(at: idx),
+                            isLatestResponse: idx == messages.count - 1,
+                            onRegenerate: onRegenerate
                         )
                         .id(m.id)
                     }
@@ -73,7 +76,7 @@ struct MessageListView: View {
         }
     }
 
-    /// The terminal "Complete" / "Cancelled" badge should only render on the
+    /// The terminal "Finished" / "Cancelled" badge should only render on the
     /// last assistant message in the run, not on every finished message.
     private func isLastTurnBoundary(at index: Int) -> Bool {
         guard messages[index].role == .assistant else { return false }

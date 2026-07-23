@@ -44,11 +44,11 @@ public final class SessionListViewModel {
             self.errorMessage = nil
             HermesDAO.upsert(list)
         } catch APIError.unauthorized {
-            self.errorMessage = "Bearer token rejected. Open Settings to update."
+            self.errorMessage = "Access token rejected. Open Settings to update."
         } catch APIError.offline {
-            self.errorMessage = "Offline — showing cached sessions."
+            self.errorMessage = "Offline — showing cached conversations."
         } catch {
-            self.errorMessage = "Could not load sessions. Pull to retry."
+            self.errorMessage = "Could not load conversations. Pull to retry."
         }
     }
 
@@ -57,7 +57,7 @@ public final class SessionListViewModel {
             let now = Date.now.timeIntervalSince1970
             let session = Session(
                 session_id: UUID().uuidString,
-                title: "New demo session",
+                title: "New demo conversation",
                 workspace: "~/demo-workspace",
                 model: model ?? "demo-model",
                 model_provider: "Mock",
@@ -77,7 +77,7 @@ public final class SessionListViewModel {
             await refresh()
             return s
         } catch {
-            errorMessage = "Could not create session: \(error.localizedDescription)"
+            errorMessage = "Could not create conversation: \(error.localizedDescription)"
             return nil
         }
     }

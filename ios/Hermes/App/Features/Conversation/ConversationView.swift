@@ -13,6 +13,7 @@ struct ConversationView: View {
     @State private var viewModel: ConversationViewModel
     @State private var renaming: Bool = false
     @State private var renameDraft: String = ""
+    @State private var showAttachmentNotice: Bool = false
     @FocusState private var composerFocused: Bool
 
     init(sessionID: String, title: String, initialMessage: String? = nil) {
@@ -28,12 +29,17 @@ struct ConversationView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                MessageListView(messages: $viewModel.messages, isStreaming: viewModel.isStreaming)
+                MessageListView(
+                    messages: $viewModel.messages,
+                    isStreaming: viewModel.isStreaming,
+                    onRegenerate: { Task { await viewModel.regenerateLastResponse() } }
+                )
                 ComposerView(
                     text: $viewModel.composerText,
                     isStreaming: viewModel.isStreaming,
                     onSend: { Task { await viewModel.send() } },
-                    onCancel: { Task { await viewModel.cancelStream() } }
+                    onCancel: { Task { await viewModel.cancelStream() } },
+                    onAttachment: { showAttachmentNotice = true }
                 )
             }
             if let msg = viewModel.errorMessage {
@@ -70,7 +76,7 @@ struct ConversationView: View {
                 } label: { Image(systemName: "pencil") }
             }
         }
-        .alert("Rename session", isPresented: $renaming) {
+        .alert("Rename conversation", isPresented: $renaming) {
             TextField("Title", text: $renameDraft)
             Button("Cancel", role: .cancel) {}
             Button("Save") {
@@ -89,6 +95,11 @@ struct ConversationView: View {
                     }
                 }
             }
+        }
+        .alert("Attachments", isPresented: $showAttachmentNotice) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Mobile file and photo uploads are not available yet. The attachment control is ready for a future update.")
         }
         .task {
             await viewModel.bootstrap(config: apiConfig)

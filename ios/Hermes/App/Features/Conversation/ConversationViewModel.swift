@@ -122,17 +122,41 @@ public final class ConversationViewModel {
     }
 
     public func send() async {
+        let text = composerText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !isStreaming else { return }
+        await send(text: text, appendingUserMessage: true)
+    }
+
+    /// Re-run the latest assistant turn using the existing user prompt.
+    /// Remove the previous exchange first so the refreshed transcript contains
+    /// one copy of the resent prompt and one regenerated response.
+    public func regenerateLastResponse() async {
+        guard !isStreaming,
+              let assistantIndex = messages.lastIndex(where: { $0.role == .assistant && $0.isFinal }),
+              assistantIndex == messages.count - 1,
+              let userIndex = messages[..<assistantIndex].lastIndex(where: { $0.role == .user })
+        else { return }
+
+        let text = messages[userIndex].text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        messages.removeSubrange(userIndex...assistantIndex)
+        await send(text: text, appendingUserMessage: true)
+    }
+
+    private func send(text: String, appendingUserMessage: Bool) async {
         if isMock {
-            await sendMock()
+            await sendMock(text: text, appendingUserMessage: appendingUserMessage)
             return
         }
         guard let client = client else { return }
-        let text = composerText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, !isStreaming else { return }
-        composerText = ""
+        guard !isStreaming else { return }
+        if appendingUserMessage {
+            composerText = ""
+        }
         HapticManager.play(.soft)
-        let user = ChatMessage.user(text)
-        messages.append(user)
+        if appendingUserMessage {
+            messages.append(.user(text))
+        }
         // Append placeholder assistant message.
         let assistant = ChatMessage.assistant()
         messages.append(assistant)
@@ -192,19 +216,22 @@ public final class ConversationViewModel {
         await consume(streamID: cursor.streamID, lastEventID: cursor.lastEventID, on: messages.last!.id)
     }
 
-    private func sendMock() async {
-        let text = composerText.trimmingCharacters(in: .whitespacesAndNewlines)
+    private func sendMock(text: String, appendingUserMessage: Bool) async {
         guard !text.isEmpty, !isStreaming else { return }
-        composerText = ""
+        if appendingUserMessage {
+            composerText = ""
+        }
         HapticManager.play(.soft)
-        messages.append(.user(text))
+        if appendingUserMessage {
+            messages.append(.user(text))
+        }
         let assistant = ChatMessage.assistant()
         messages.append(assistant)
         isStreaming = true
 
         try? await Task.sleep(nanoseconds: 250_000_000)
         guard let index = messages.firstIndex(where: { $0.id == assistant.id }) else { return }
-        messages[index].text = "Demo reply: I received \"\(text)\". Connect a bridge later to talk to a real Hermes backend."
+        messages[index].text = "Demo reply: I received \"\(text)\". Connect Hermes later to talk to a real backend."
         messages[index].terminal = .success
         messages[index].isFinal = true
         isStreaming = false

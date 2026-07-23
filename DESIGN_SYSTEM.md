@@ -1,6 +1,6 @@
 # Hermes design system
 
-Hermes uses a conversation-first visual language inspired by the calm, low-chrome layout of modern AI chat clients. It is intentionally not a brand copy: Hermes keeps its green accent and treats sessions, tools, and streaming state as first-class product information.
+Hermes uses a conversation-first visual language inspired by the calm, low-chrome layout of modern AI chat clients. It is intentionally not a brand copy: Hermes keeps its green accent and treats conversations, tools, and streaming state as first-class product information.
 
 ## Principles
 
@@ -26,7 +26,7 @@ Hermes uses a conversation-first visual language inspired by the calm, low-chrom
 
 ## Screen patterns
 
-- **Sessions:** compact inline title, quiet list rows, simple leading icon, model and message count as metadata, no oversized filled icon tiles.
+- **Chats:** compact inline title, quiet list rows, simple leading icon, model and message count as metadata, no oversized filled icon tiles.
 - **Conversation:** assistant responses sit directly on the canvas; user messages use a restrained trailing bubble; reasoning and tools use lightweight disclosure rows.
 - **Composer:** rounded surface with a clear text field and high-contrast send/stop affordance.
 - **Settings / onboarding:** native grouped controls, short sections, one primary action per screen.

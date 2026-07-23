@@ -73,7 +73,7 @@ public final class FirstRunViewModel {
         guard let url = URL(string: gatewayURLString.trimmingCharacters(in: .whitespacesAndNewlines)),
               let token = bearerToken.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
         else {
-            testResult = .failure("URL and token are required.")
+            testResult = .failure("Connection URL and access token are required.")
             return
         }
         isTesting = true

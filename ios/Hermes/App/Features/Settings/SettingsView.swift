@@ -18,17 +18,17 @@ struct SettingsView: View {
                 Section(apiConfig.isMock ? "Demo account" : "Connection") {
                     if apiConfig.isMock {
                         LabeledContent("Account", value: "Demo user")
-                        Text("Running with local sample data. No bridge connection is required.")
+                        Text("Running with local sample data. No connection is required.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     } else {
-                        LabeledContent("Gateway URL") {
+                        LabeledContent("Connection URL") {
                             Text(apiConfig.gatewayURL?.absoluteString ?? "—")
                                 .lineLimit(1)
                                 .truncationMode(.middle)
                                 .font(.caption.monospaced())
                         }
-                        LabeledContent("Token") {
+                        LabeledContent("Access token") {
                             Text(maskToken(apiConfig.bearerToken))
                                 .font(.caption.monospaced())
                         }
@@ -52,14 +52,14 @@ struct SettingsView: View {
                         appState.reloadAuth()
                         dismiss()
                     } label: {
-                        Label("Sign out and wipe Keychain", systemImage: "trash")
+                        Label("Disconnect Hermes", systemImage: "rectangle.portrait.and.arrow.right")
                     }
                 } footer: {
-                    Text("Signing out removes the gateway URL and bearer token from the secure enclave. Your server-side sessions and history are untouched.")
+                    Text("Disconnecting removes the saved connection details from this device. Your server-side conversations and history remain untouched.")
                 }
                 Section("Build") {
                     LabeledContent("App", value: "Hermes v0.1.0")
-                    LabeledContent("Bridge", value: "hermes-mobile-bridge")
+                    LabeledContent("Connection", value: "Hermes")
                 }
             }
             .scrollContentBackground(.hidden)

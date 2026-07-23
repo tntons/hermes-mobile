@@ -11,10 +11,19 @@ struct ComposerView: View {
     let isStreaming: Bool
     let onSend: () -> Void
     let onCancel: () -> Void
+    let onAttachment: () -> Void
 
     var body: some View {
         HStack(alignment: .bottom, spacing: HermesTheme.Spacing.xs) {
             HStack(alignment: .bottom, spacing: HermesTheme.Spacing.xs) {
+                Button(action: onAttachment) {
+                    Image(systemName: "paperclip")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(HermesTheme.textSecondary)
+                        .frame(width: 34, height: 34)
+                }
+                .accessibilityLabel("Add attachment")
+
                 TextField(placeholder, text: $text, axis: .vertical)
                     .lineLimit(1...8)
                     .font(.system(size: 16))

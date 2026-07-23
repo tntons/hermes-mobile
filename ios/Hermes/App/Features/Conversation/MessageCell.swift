@@ -15,6 +15,8 @@ struct MessageCell: View {
     let message: ChatMessage
     let isStreaming: Bool
     var isLastInTurn: Bool = false
+    var isLatestResponse: Bool = false
+    let onRegenerate: () -> Void
 
     private static let bubbleCornerRadius: CGFloat = 18
 
@@ -41,6 +43,9 @@ struct MessageCell: View {
                     if !message.text.isEmpty {
                         MarkdownText(text: message.text)
                             .transition(.opacity.combined(with: .move(edge: .top)))
+                        if isLastInTurn, message.isFinal {
+                            responseActions
+                        }
                     }
                     if let a = message.approval { ApprovalCard(approval: a) }
                     if isLastInTurn, let t = message.terminal, message.isFinal {
@@ -59,6 +64,42 @@ struct MessageCell: View {
                 Spacer()
             }
         }
+    }
+
+    @ViewBuilder
+    private var responseActions: some View {
+        HStack(spacing: HermesTheme.Spacing.sm) {
+            Button {
+                UIPasteboard.general.string = message.text
+                HapticManager.play(.soft)
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    copiedResponse = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        copiedResponse = false
+                    }
+                }
+            } label: {
+                Label(copiedResponse ? "Copied" : "Copy", systemImage: copiedResponse ? "checkmark" : "doc.on.doc")
+                    .font(.caption)
+                    .foregroundStyle(HermesTheme.textSecondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Copy response")
+
+            if isLatestResponse {
+                Button(action: onRegenerate) {
+                    Label("Regenerate", systemImage: "arrow.clockwise")
+                        .font(.caption)
+                        .foregroundStyle(HermesTheme.textSecondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(isStreaming)
+                .accessibilityLabel("Regenerate response")
+            }
+        }
+        .padding(.top, 2)
     }
 
     // MARK: - User bubble
@@ -112,6 +153,7 @@ struct MessageCell: View {
     }
 
     @State private var userMenuShown: Bool = false
+    @State private var copiedResponse: Bool = false
 
     // MARK: - Avatar
 
@@ -410,7 +452,7 @@ struct TerminalBadge: View {
             switch state {
             case .success:
                 Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
-                Text("Complete").font(.caption).foregroundStyle(HermesTheme.textSecondary)
+                Text("Finished").font(.caption).foregroundStyle(HermesTheme.textSecondary)
             case .cancelled:
                 Image(systemName: "stop.circle").foregroundStyle(HermesTheme.textSecondary)
                 Text("Cancelled").font(.caption).foregroundStyle(HermesTheme.textSecondary)

@@ -20,6 +20,7 @@ struct HomeView: View {
     @State private var presentSettings = false
     @State private var presentHistory = false
     @State private var streamingLockedSession: Session?
+    @State private var showAttachmentNotice = false
 
     private let suggestedPrompts = [
         "Review a code snippet",
@@ -83,8 +84,13 @@ struct HomeView: View {
                             RoundedRectangle(cornerRadius: HermesTheme.Radius.small)
                                 .stroke(HermesTheme.border, lineWidth: 0.5)
                         }
-                        .padding()
+                    .padding()
                 }
+            }
+            .alert("Attachments", isPresented: $showAttachmentNotice) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Mobile file and photo uploads are not available yet. The attachment control is ready for a future update.")
             }
             .navigationDestination(for: ConversationRoute.self) { route in
                 ConversationView(
@@ -105,7 +111,7 @@ struct HomeView: View {
                     .environment(apiConfig)
             }
             .alert(
-                "Session is streaming",
+                "Conversation is streaming",
                 isPresented: Binding(
                     get: { streamingLockedSession != nil },
                     set: { if !$0 { streamingLockedSession = nil } }
@@ -185,7 +191,8 @@ struct HomeView: View {
             placeholder: "Ask Hermes anything…",
             isStreaming: false,
             onSend: { Task { await createConversation() } },
-            onCancel: {}
+            onCancel: {},
+            onAttachment: { showAttachmentNotice = true }
         )
         .disabled(isCreatingConversation)
         .opacity(isCreatingConversation ? 0.65 : 1)
@@ -365,7 +372,7 @@ struct SessionHistoryView: View {
                 }
             }
             .alert(
-                "Session is streaming",
+                "Conversation is streaming",
                 isPresented: Binding(
                     get: { streamingLockedSession != nil },
                     set: { if !$0 { streamingLockedSession = nil } }

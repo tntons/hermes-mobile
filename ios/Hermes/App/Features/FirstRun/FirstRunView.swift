@@ -30,18 +30,18 @@ struct FirstRunView: View {
                         } label: {
                             Label("Continue as demo user", systemImage: "person.crop.circle.badge.checkmark")
                         }
-                        Text("Uses local sample data and does not require a bridge.")
+                        Text("Uses local sample data and does not require a connection.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
 #endif
-                    Section("Bridge") {
-                        TextField("Gateway URL (https://…)", text: $viewModel.gatewayURLString)
+                    Section("Connection") {
+                        TextField("Connection URL (https://…)", text: $viewModel.gatewayURLString)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .keyboardType(.URL)
                             .focused($focused, equals: .url)
-                        TextField("Bearer token", text: $viewModel.bearerToken)
+                        TextField("Access token", text: $viewModel.bearerToken)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .focused($focused, equals: .token)
@@ -77,7 +77,7 @@ struct FirstRunView: View {
                         Section { Text(msg).foregroundStyle(.red) }
                     }
                     Section {
-                        Text("Tokens are stored in the iOS Keychain and never leave your device. Point your bridge's `cloudflared` tunnel at your host, then paste the public URL above plus your `MOBILE_TOKEN`.")
+                        Text("Your access token is stored securely on this device. Paste your public connection URL and access token to connect Hermes.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
