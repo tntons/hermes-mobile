@@ -129,6 +129,9 @@ def test_session_creation_defaults_to_jarvis_profile(client, settings):
     upstream = respx.post("http://webui.test/api/session/new").mock(
         return_value=respx.MockResponse(status_code=200, json={"session": {"session_id": "s1"}})
     )
+    personality = respx.post("http://webui.test/api/personality/set").mock(
+        return_value=respx.MockResponse(status_code=200, json={"ok": True, "personality": "jarvis"})
+    )
 
     r = client.post(
         "/api/session/new",
@@ -137,7 +140,13 @@ def test_session_creation_defaults_to_jarvis_profile(client, settings):
     )
 
     assert r.status_code == 200
-    assert json.loads(upstream.calls[0].request.content)["profile"] == "jarvis"
+    payload = json.loads(upstream.calls[0].request.content)
+    assert payload["profile"] == "jarvis"
+    assert payload["personality"] == "jarvis"
+    assert json.loads(personality.calls[0].request.content) == {
+        "session_id": "s1",
+        "name": "jarvis",
+    }
 
 
 @respx.mock
@@ -148,6 +157,9 @@ def test_explicit_profile_is_preserved(client, settings):
     upstream = respx.post("http://webui.test/api/session/new").mock(
         return_value=respx.MockResponse(status_code=200, json={"session": {"session_id": "s1"}})
     )
+    personality = respx.post("http://webui.test/api/personality/set").mock(
+        return_value=respx.MockResponse(status_code=200, json={"ok": True, "personality": "jarvis"})
+    )
 
     r = client.post(
         "/api/session/new",
@@ -156,7 +168,35 @@ def test_explicit_profile_is_preserved(client, settings):
     )
 
     assert r.status_code == 200
-    assert json.loads(upstream.calls[0].request.content)["profile"] == "engineering"
+    payload = json.loads(upstream.calls[0].request.content)
+    assert payload["profile"] == "engineering"
+    assert payload["personality"] == "jarvis"
+    assert json.loads(personality.calls[0].request.content)["name"] == "jarvis"
+
+
+@respx.mock
+def test_explicit_personality_is_preserved(client, settings):
+    respx.post("http://webui.test/api/auth/login").mock(
+        return_value=respx.MockResponse(status_code=200, json={"ok": True})
+    )
+    upstream = respx.post("http://webui.test/api/session/new").mock(
+        return_value=respx.MockResponse(status_code=200, json={"session": {"session_id": "s1"}})
+    )
+    personality = respx.post("http://webui.test/api/personality/set").mock(
+        return_value=respx.MockResponse(
+            status_code=200, json={"ok": True, "personality": "concise"}
+        )
+    )
+
+    r = client.post(
+        "/api/session/new",
+        headers={"Authorization": "Bearer phone-token-hex"},
+        json={"personality": "concise"},
+    )
+
+    assert r.status_code == 200
+    assert json.loads(upstream.calls[0].request.content)["personality"] == "concise"
+    assert json.loads(personality.calls[0].request.content)["name"] == "concise"
 
 
 @respx.mock
@@ -170,6 +210,9 @@ def test_chat_start_defaults_to_jarvis_profile(client, settings):
             json={"stream_id": "stream-1", "session_id": "session-1"},
         )
     )
+    personality = respx.post("http://webui.test/api/personality/set").mock(
+        return_value=respx.MockResponse(status_code=200, json={"ok": True, "personality": "jarvis"})
+    )
 
     r = client.post(
         "/api/chat/start",
@@ -178,4 +221,10 @@ def test_chat_start_defaults_to_jarvis_profile(client, settings):
     )
 
     assert r.status_code == 200
-    assert json.loads(upstream.calls[0].request.content)["profile"] == "jarvis"
+    payload = json.loads(upstream.calls[0].request.content)
+    assert payload["profile"] == "jarvis"
+    assert payload["personality"] == "jarvis"
+    assert json.loads(personality.calls[0].request.content) == {
+        "session_id": "session-1",
+        "name": "jarvis",
+    }

@@ -33,9 +33,11 @@ class Settings(BaseSettings):
     # Bearer auth for the phone
     mobile_token: SecretStr = Field(default=SecretStr(""))
 
-    # The upstream Hermes runtime owns the actual profile instructions. The
-    # bridge only selects this profile when a request omits one explicitly.
+    # The upstream Hermes runtime owns the actual profile and personality
+    # instructions. The bridge selects these defaults when a request omits
+    # them explicitly.
     jarvis_profile: str = Field(default="jarvis")
+    jarvis_personality: str = Field(default="jarvis")
 
     # Runs registry / SQLite
     runs_db_path: str = Field(default="./runs.sqlite")

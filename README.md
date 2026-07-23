@@ -24,7 +24,8 @@ on the server hosting the agent, bridge, and tunnel.
 - Bearer authentication from the phone to `jarvis-bridge`.
 - SQLite run registry for SSE resume and terminal state.
 - Optional named Cloudflare Tunnel service named `jarvis-cloudflared`.
-- Default upstream profile: `jarvis`.
+- Default upstream profile and personality: `jarvis`.
+- Tracked upstream persona template: `backend/deployment/jarvis-profile/config.yaml`.
 
 Internal compatibility identifiers such as `WEBUI_PASSWORD`,
 `HERMES_WEBUI_PASSWORD`, `MOBILE_TOKEN`, `/api/*`, and `hermes_session` remain

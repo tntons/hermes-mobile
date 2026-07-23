@@ -25,9 +25,11 @@ and product metadata. Hermes Agent remains upstream and is not forked.
 
 - Backend package renamed to `jarvis_bridge`.
 - FastAPI metadata and bridge version identify JARVIS.
-- Default upstream profile selection is `JARVIS_PROFILE=jarvis` when a request
-  does not provide an explicit profile.
-- Backend regression suite expanded to 9 tests.
+- Default upstream profile and personality selection is `jarvis` when a request
+  does not provide an explicit value. The bridge persists the personality via
+  the upstream `/api/personality/set` route because `/api/session/new` does not
+  consume that field directly.
+- Backend regression suite expanded to 10 tests.
 - Ruff lint and format checks pass.
 - iOS project, target, scheme, source paths, and application-facing Swift types
   are renamed to JARVIS/Jarvis.
@@ -38,13 +40,16 @@ and product metadata. Hermes Agent remains upstream and is not forked.
   `ios/JARVIS/Assets.xcassets/AppIcon.appiconset/icon.png`.
 - Docker services are `jarvis-agent` and `jarvis-bridge`; Cloudflare is
   documented as `jarvis-cloudflared`.
+- The tracked upstream persona template is
+  `backend/deployment/jarvis-profile/config.yaml`; it must be installed into
+  the mounted Hermes home before deployment.
 - Root, backend, design-system, handoff, and agent documentation updated.
 
 ## Verification record
 
 Passed:
 
-- `backend/uv run pytest -q` — 9 passed.
+- `backend/uv run pytest -q` — 10 passed.
 - `backend/uv run ruff check .` — passed.
 - `backend/uv run ruff format --check .` — passed.
 - `backend/python3 -m py_compile jarvis_bridge/*.py tests/*.py` — passed.

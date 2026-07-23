@@ -13,9 +13,11 @@ depends on them.
 
 ## Persona uses the upstream profile mechanism
 
-The bridge selects the `jarvis` profile when no explicit profile is provided.
-It does not inject text into user messages or invent a new system-message
-format.
+The bridge selects the `jarvis` profile and personality when no explicit
+values are provided. It persists the personality through the upstream
+`/api/personality/set` route. The actual system instructions live in the
+tracked `backend/deployment/jarvis-profile/config.yaml` template, not in user
+messages and not in a fork of the Hermes Agent source.
 
 ## Bundle and Keychain migration is deferred
 

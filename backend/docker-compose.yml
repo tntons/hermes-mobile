@@ -30,6 +30,7 @@ services:
       WEBUI_PASSWORD: ${WEBUI_PASSWORD:?must be set}
       MOBILE_TOKEN: ${MOBILE_TOKEN:?must be set}
       JARVIS_PROFILE: ${JARVIS_PROFILE:-jarvis}
+      JARVIS_PERSONALITY: ${JARVIS_PERSONALITY:-jarvis}
       RUNS_DB_PATH: /data/runs.sqlite
       BRIDGE_HOST: 0.0.0.0
       BRIDGE_PORT: "8080"

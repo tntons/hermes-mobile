@@ -294,6 +294,22 @@ async def chat_start(
     """Start a turn AND record it in the runs registry."""
     body = await request.json()
     body.setdefault("profile", get_settings().jarvis_profile)
+    body.setdefault("personality", get_settings().jarvis_personality)
+    personality = body.get("personality")
+    if isinstance(personality, str) and personality:
+        try:
+            personality_resp = await webui.post(
+                "/api/personality/set",
+                json_body={"session_id": body.get("session_id"), "name": personality},
+            )
+            if personality_resp.status_code >= 400:
+                logger.warning(
+                    "upstream personality selection failed before chat start: HTTP %s %s",
+                    personality_resp.status_code,
+                    personality_resp.text[:200],
+                )
+        except Exception:
+            logger.exception("failed to set personality before chat start")
     resp = await webui.post("/api/chat/start", json_body=body)
     try:
         data = resp.json()

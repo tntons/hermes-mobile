@@ -45,8 +45,12 @@ reminders, scheduled jobs, and production notifications are later phases.
   and `/api/*` contract unchanged.
 - Default missing session/chat profiles to the upstream-supported `jarvis`
   profile using `JARVIS_PROFILE`; preserve explicit profiles.
-- Configure the actual secretary system instructions in the upstream profile
-  mechanism, not by rewriting bridge user messages.
+- Default missing session/chat personalities to `jarvis` using
+  `JARVIS_PERSONALITY`; persist them through the upstream personality endpoint.
+- Provide the actual secretary system instructions in
+  `backend/deployment/jarvis-profile/config.yaml`. Install that file into the
+  deployed Hermes profile; do not rewrite bridge user messages or upstream
+  source.
 
 ### Documentation
 
@@ -77,6 +81,6 @@ xcodebuild -project JARVIS.xcodeproj -scheme JARVIS \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
 ```
 
-Integration must verify JARVIS metadata, profile defaulting, session listing,
-chat start, SSE resume, Keychain compatibility, and private Docker service
-boundaries.
+Integration must verify JARVIS metadata, profile/personality defaulting, session
+listing, chat start, SSE resume, Keychain compatibility, and private Docker
+service boundaries.

@@ -26,6 +26,7 @@ public struct Session: Codable, Identifiable, Hashable, Sendable {
     public var archived: Bool
     public var project_id: String?
     public var profile: String?
+    public var personality: String?
     public var input_tokens: Int
     public var output_tokens: Int
     public var estimated_cost: Double?
@@ -42,7 +43,7 @@ public struct Session: Codable, Identifiable, Hashable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case session_id, title, workspace, model, model_provider, message_count
-        case created_at, updated_at, last_message_at, pinned, archived, project_id, profile
+        case created_at, updated_at, last_message_at, pinned, archived, project_id, profile, personality
         case input_tokens, output_tokens, estimated_cost
         case is_streaming, has_pending_user_message, active_stream_id
         case messages, tool_calls, end_reason, actual_message_count
@@ -64,6 +65,7 @@ public struct Session: Codable, Identifiable, Hashable, Sendable {
         self.archived = (try? c.decode(Bool.self, forKey: .archived)) ?? false
         self.project_id = try? c.decodeIfPresent(String.self, forKey: .project_id)
         self.profile = try? c.decodeIfPresent(String.self, forKey: .profile)
+        self.personality = try? c.decodeIfPresent(String.self, forKey: .personality)
         self.input_tokens = (try? c.decode(Int.self, forKey: .input_tokens)) ?? 0
         self.output_tokens = (try? c.decode(Int.self, forKey: .output_tokens)) ?? 0
         self.estimated_cost = try? c.decodeIfPresent(Double.self, forKey: .estimated_cost)
@@ -91,6 +93,7 @@ public struct Session: Codable, Identifiable, Hashable, Sendable {
         archived: Bool = false,
         project_id: String? = nil,
         profile: String? = nil,
+        personality: String? = nil,
         input_tokens: Int = 0,
         output_tokens: Int = 0,
         estimated_cost: Double? = nil,
@@ -115,6 +118,7 @@ public struct Session: Codable, Identifiable, Hashable, Sendable {
         self.archived = archived
         self.project_id = project_id
         self.profile = profile
+        self.personality = personality
         self.input_tokens = input_tokens
         self.output_tokens = output_tokens
         self.estimated_cost = estimated_cost
@@ -142,6 +146,7 @@ public struct Session: Codable, Identifiable, Hashable, Sendable {
         try c.encode(archived, forKey: .archived)
         try c.encodeIfPresent(project_id, forKey: .project_id)
         try c.encodeIfPresent(profile, forKey: .profile)
+        try c.encodeIfPresent(personality, forKey: .personality)
         try c.encode(input_tokens, forKey: .input_tokens)
         try c.encode(output_tokens, forKey: .output_tokens)
         try c.encodeIfPresent(estimated_cost, forKey: .estimated_cost)

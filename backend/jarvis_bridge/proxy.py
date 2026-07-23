@@ -41,6 +41,34 @@ logger = logging.getLogger("jarvis_bridge.proxy")
 router = APIRouter()
 
 
+async def _set_upstream_personality(
+    webui: WebUIClient,
+    session_id: str,
+    personality: str,
+) -> None:
+    """Persist the selected upstream personality for a newly created session.
+
+    Hermes Agent exposes personality selection as a session mutation rather
+    than a field consumed by ``/api/session/new``. Keep that upstream detail
+    inside the bridge so the iOS client only needs the JARVIS API contract.
+    """
+    try:
+        response = await webui.post(
+            "/api/personality/set",
+            json_body={"session_id": session_id, "name": personality},
+        )
+    except Exception:
+        logger.exception("failed to set personality for session %s", session_id)
+        return
+    if response.status_code >= 400:
+        logger.warning(
+            "upstream personality selection failed for session %s: HTTP %s %s",
+            session_id,
+            response.status_code,
+            response.text[:200],
+        )
+
+
 # Endpoints that mutate session state. If a session is actively streaming
 # (per webui's response), we reject the iOS-side POST so we don't step on
 # the desktop's turn. Reads (GET) and the chat/stream SSE itself are
@@ -134,10 +162,11 @@ async def _passthrough(
             # For multipart or binary uploads, hand raw bytes through.
             body = await request.body()
 
-    # Select the upstream-supported JARVIS profile without rewriting the
-    # user's message. Explicit profiles remain untouched.
+    # Select the upstream-supported JARVIS profile/personality without
+    # rewriting the user's message. Explicit values remain untouched.
     if path == "/api/session/new" and isinstance(body, dict):
         body.setdefault("profile", get_settings().jarvis_profile)
+        body.setdefault("personality", get_settings().jarvis_personality)
 
     # Concurrency guard: if the iOS app tries to mutate a session that
     # webui reports as actively streaming, reject the call. The active
@@ -207,6 +236,25 @@ async def _passthrough(
     is_json = "json" in out_ct.lower()
     if is_json and method == "GET" and resp.status_code == 200:
         body_bytes = _strip_stream_fields(body_bytes)
+
+    # ``/api/session/new`` does not consume ``personality`` itself in the
+    # upstream API. Apply it after creation, then return the original session
+    # response to preserve the upstream wire contract.
+    if path == "/api/session/new" and resp.status_code < 400 and isinstance(body, dict):
+        try:
+            created = json.loads(resp.content)
+            session = created.get("session", {}) if isinstance(created, dict) else {}
+            session_id = session.get("session_id") if isinstance(session, dict) else None
+            personality = body.get("personality")
+            if (
+                isinstance(session_id, str)
+                and session_id
+                and isinstance(personality, str)
+                and personality
+            ):
+                await _set_upstream_personality(webui, session_id, personality)
+        except (ValueError, TypeError, AttributeError):
+            logger.warning("could not inspect new session response for personality selection")
 
     return Response(
         content=body_bytes,

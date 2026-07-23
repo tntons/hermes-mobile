@@ -17,7 +17,8 @@ identifiers and must not be renamed in the upstream integration.
 
 ```bash
 cp .env.example .env
-# Set WEBUI_PASSWORD, MOBILE_TOKEN, and optionally JARVIS_PROFILE.
+# Set WEBUI_PASSWORD, MOBILE_TOKEN, and optionally JARVIS_PROFILE or
+# JARVIS_PERSONALITY.
 uv sync
 uv run uvicorn jarvis_bridge.main:app --reload --port 8080
 ```
@@ -45,7 +46,18 @@ agent remains on the private Docker network.
 
 When a session or chat-start request omits `profile`, the bridge selects the
 upstream-supported profile named by `JARVIS_PROFILE` (default: `jarvis`). It
-does not rewrite user messages or fork the Hermes Agent source.
+does not rewrite user messages or fork the Hermes Agent source. When
+`personality` is omitted, it selects `JARVIS_PERSONALITY` (default: `jarvis`)
+and persists that selection through the upstream personality endpoint.
+
+Install the actual upstream persona before deployment:
+
+```bash
+mkdir -p "$HERMES_HOME/profiles/jarvis"
+cp deployment/jarvis-profile/config.yaml "$HERMES_HOME/profiles/jarvis/config.yaml"
+```
+
+See `deployment/jarvis-profile/README.md` for the profile ownership boundary.
 
 ## Verification
 
